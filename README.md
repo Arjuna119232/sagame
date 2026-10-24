@@ -21,6 +21,18 @@ app/src/main/
 tools/make_intro.py                # generator video splash (Pillow + ffmpeg)
 ```
 
+## Kontrol
+
+| Aksi | Cara |
+|---|---|
+| Jalan | joystick kiri (analog, arah bebas) |
+| Lari | tahan tombol `LARI/REM` sambil jalan |
+| Lihat sekitar | geser layar di area bebas (kamera free-look, pitch dibatasi) |
+| Masuk/mengemudi mobil | dekatkan diri ke mobil, tekan `MASUK` |
+| Gas / rem | joystick saat mengemudi; `LARI/REM` = rem |
+| Pukul | tombol `PUKUL` (hanya saat jalan kaki, cooldown 0,3 dtk) |
+| Jeda | tombol `II` atau tombol back |
+
 ## Video splash
 
 `assets/intro.mp4` — 1280x720, 30 fps, 6,4 detik, H.264 High / yuv420p, tanpa audio
@@ -84,8 +96,17 @@ ANDROID_HOME=/opt/android-sdk ./gradlew assembleDebug
 ## Rilis
 
 APK debug ditandatangani dengan debug keystore dan diunggah sebagai asset
-GitHub Release (`v0.1`). Untuk distribusi serius, buat keystore rilis sendiri
-dan konfigurasikan `signingConfigs` di `app/build.gradle`.
+GitHub Release (`v0.1`, `v0.2`, `v0.3`). Untuk distribusi serius, buat keystore
+rilis sendiri dan konfigurasikan `signingConfigs` di `app/build.gradle`.
+
+## Riwayat versi
+
+- **v0.3** — mekanik pukul (`PUKUL`) + kamera free-look (geser layar), tabrakan
+  kendaraan (`vb`) sehingga mobil/bus memblokir pemain, NPC bervariasi
+  (pria/wanita/punk) dengan rambut dan aksesori, lalu lintas berhenti bila pemain
+  menghalangi, kamera menjauh bila menempel dinding, tips baru di layar loading.
+- **v0.2** — video splash `intro.mp4` + generator `tools/make_intro.py`.
+- **v0.1** — rilis pertama: WebView fullscreen, dunia Jakarta, HUD, minimap.
 
 ## Catatan
 
