@@ -13,10 +13,30 @@ Game 3D jalanan Jakarta berbasis **three.js** yang dibungkus menjadi aplikasi An
 app/src/main/
 ├── AndroidManifest.xml            # activity fullscreen, sensorLandscape
 ├── assets/index.html              # seluruh game (render, HUD, menu, splash)
+├── assets/intro.mp4               # video splash (dibuat oleh tools/make_intro.py)
 ├── assets/three.min.js            # diunduh saat build (gitignore)
 └── java/com/karta/sagame/
     └── MainActivity.java          # WebView + JavascriptInterface
+
+tools/make_intro.py                # generator video splash (Pillow + ffmpeg)
 ```
+
+## Video splash
+
+`assets/intro.mp4` — 1280x720, 30 fps, 6,4 detik, H.264 High / yuv420p, tanpa audio
+(autoplay WebView aman karena `muted`). Alurnya: kartu studio `0xmahen PRESENTS`,
+lalu judul `PREMAN / GANG SEMPIT` di atas siluet Jakarta saat senja (Monas, jendela
+menyala), ditutup fade ke hitam agar menyambung ke layar loading.
+
+Video dibuat ulang secara deterministik:
+
+```sh
+sudo apt install ffmpeg python3-pil        # sekali saja
+python3 tools/make_intro.py app/src/main/assets/intro.mp4
+```
+
+Kalau `intro.mp4` tidak ada atau gagal diputar, `index.html` otomatis jatuh ke
+splash teks (`setTimeout` 5,8 detik) sehingga aplikasi tetap jalan.
 
 ## Build
 
@@ -69,6 +89,7 @@ dan konfigurasikan `signingConfigs` di `app/build.gradle`.
 
 ## Catatan
 
-- `assets/index.html` merujuk `intro.mp4` untuk splash screen; file video tidak
-  disertakan sehingga splash memakai teks.
-- Back button memanggil `window.bk()` bila didefinisikan oleh game.
+- `buildToolsVersion '35.0.0'` dipatok agar build konsisten antara CI dan perangkat;
+  AGP 8.5.2 tetap memakai `compileSdk 34`.
+- Back button memanggil `window.bk()` (didefinisikan game) untuk jeda/kembali/keluar.
+- APK debug ditandatangani debug keystore — bukan untuk distribusi publik.
