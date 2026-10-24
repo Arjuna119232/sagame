@@ -1,0 +1,16 @@
+# build output
+build/
+app/build/
+.gradle/
+local.properties
+
+# generated asset (fetched by CI from CDN)
+app/src/main/assets/three.min.js
+
+# artifacts / editor noise
+*.apk
+*.aab
+*.keystore
+.idea/
+*.iml
+.DS_Store
