@@ -63,6 +63,28 @@ const hit=(x,z,r)=>BU.some(b=>Math.abs(x-b.x)<b.r+r&&Math.abs(z-b.z)<b.r+r)||CI.
 const DS=NB/11;
 function dist(i,j){if(!i&&!j)return'Monas, Gambir';if(j<=-4*DS)return i<0?'Kota Tua':'Ancol';if(!i&&j==2)return'Bundaran HI, Thamrin';if(j>=5*DS)return'Blok M';if(i<=-3*DS&&j>=2)return'Senayan';if(j>=2&&i>=DS)return'Kuningan';if(j>=2)return'Sudirman - SCBD';if(i<=-2*DS)return'Tanah Abang';if(i>=2*DS)return'Menteng';return'Gambir, Jakarta Pusat'}
 const LB=[];function lab(t,x,y,z){const e=document.createElement('div');e.className='lb';e.textContent=t;$('lbs').appendChild(e);LB.push({e,v:new THREE.Vector3(x,y,z)})}
+function plang(t,x,z,rot){
+  // plang jalan hijau fisik (bukan melayang): tiang + papan dengan teks
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,2.2,8),new THREE.MeshStandardMaterial({color:0x666666}));
+  post.position.set(x,.9,z);S.add(post);
+  const cv=document.createElement('canvas');cv.width=256;cv.height=96;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#1b7a3d';cx.fillRect(0,0,256,96);
+  cx.strokeStyle='#ffffff';cx.lineWidth=4;cx.strokeRect(4,4,248,88);
+  cx.fillStyle='#ffffff';cx.font='bold 26px Arial';cx.textAlign='center';cx.textBaseline='middle';
+  // wrap text if long
+  const words=t.split(' ');let line='';const lines=[];
+  for(const w of words){const test=line?line+' '+w:w;if(cx.measureText(test).width>230){lines.push(line);line=w}else line=test}
+  if(line)lines.push(line);
+  const lh=30;const startY=48-(lines.length-1)*lh/2;
+  lines.forEach((ln,i)=>cx.fillText(ln,128,startY+i*lh));
+  const tex=new THREE.CanvasTexture(cv);tex.needsUpdate=true;
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.6),new THREE.MeshBasicMaterial({map:tex,transparent:false}));
+  board.position.set(x,2.0,z);board.rotation.y=rot||0;S.add(board);
+  // papan belakang (hijau solid) supaya terlihat dari dua sisi
+  const back=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.6),new THREE.MeshBasicMaterial({color:0x1b7a3d}));
+  back.position.set(x,2.0,z);back.rotation.y=(rot||0)+Math.PI;S.add(back);
+}
 const park=(x,z,c)=>flat(28,x,z,.06,std(c));
 function put(id,x,z,rot){const o=SB.loadAsset(id,[x,0,z],rot||0);if(!o.userData.missing){const b=o.userData.size;BU.push({x,z,r:Math.max(b.x,b.z)/2*.9})}return o}
 const PICK={sud:['gedung_pencakar_1','gedung_pencakar_2'],men:['rumah_menteng_1'],tan:['ruko_1','ruko_2'],kot:['gedung_kolonial_1'],anc:['gedung_umum_1'],sen:['gedung_umum_1','gedung_umum_2'],blk:['ruko_1','gedung_umum_2'],def:['gedung_umum_1','gedung_umum_2']};
@@ -150,15 +172,15 @@ SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);
 // pintu rumah menghadap selatan; spawn tepat di depan pintu supaya tidak nyangkut di tembok
 // ---- klaster Poncol Jaya: gang-gang sempit + rumah + toko (data nama gang dari OSM) ----
 const GPN=[['Gang Poncol',RUMAH_PONCOL[0]-18,RUMAH_PONCOL[2]+6],['Gang Poncol Jaya',RUMAH_PONCOL[0]+4,RUMAH_PONCOL[2]+14],['Gang Poncol Gang XI',RUMAH_PONCOL[0]+22,RUMAH_PONCOL[2]+2],['Gang Poncol Gan VIII',RUMAH_PONCOL[0]-10,RUMAH_PONCOL[2]-16],['Gang Mini 1',RUMAH_PONCOL[0]+14,RUMAH_PONCOL[2]-12],['Gang Mini 2',RUMAH_PONCOL[0]-2,RUMAH_PONCOL[2]-22],['Gang Mini 3',RUMAH_PONCOL[0]+18,RUMAH_PONCOL[2]-20],['Gang Amal I',RUMAH_PONCOL[0]-24,RUMAH_PONCOL[2]+12],['Gang Amal II',RUMAH_PONCOL[0]+26,RUMAH_PONCOL[2]+10],['Gang Jati',RUMAH_PONCOL[0]-16,RUMAH_PONCOL[2]+24],['Gang Swadaya',RUMAH_PONCOL[0]+8,RUMAH_PONCOL[2]+26],['Gang Menara',RUMAH_PONCOL[0]+20,RUMAH_PONCOL[2]+20]];
-GPN.forEach(([n,x,z])=>lab(n,x,6,z));
+GPN.forEach(([n,x,z],i)=>{plang(n,x,z, (i%2===0)?0:Math.PI/2);});
 // rumah-rumah kecil sepanjang gang
 for(let i=0;i<18;i++){const a=GPN[i%GPN.length];const rx=a[1]+(Math.random()-.5)*6,rz=a[2]+(Math.random()-.5)*6;SB.loadAsset('rumah_menteng_1',[rx,0,rz],(Math.random()*4|0)*Math.PI/2)}
 // toko Indomaret/Alfamart di mulut gang
-SB.loadAsset('ruko_1',[RUMAH_PONCOL[0]+30,0,RUMAH_PONCOL[2]-8],Math.PI/2);lab('INDOMARET',RUMAH_PONCOL[0]+30,14,RUMAH_PONCOL[2]-8);
-SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.PI/2);lab('ALFAMART',RUMAH_PONCOL[0]-28,14,RUMAH_PONCOL[2]-6);
+SB.loadAsset('ruko_1',[RUMAH_PONCOL[0]+30,0,RUMAH_PONCOL[2]-8],Math.PI/2);plang('INDOMARET',RUMAH_PONCOL[0]+30,RUMAH_PONCOL[2]-8,Math.PI/2);
+SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.PI/2);plang('ALFAMART',RUMAH_PONCOL[0]-28,RUMAH_PONCOL[2]-6,-Math.PI/2);
 // jalan kapten tendean (jalan utama) label
-lab('JL. KAPTEN TENDEAN',RUMAH_PONCOL[0],18,RUMAH_PONCOL[2]-40);
-lab('JL. KUNINGAN BARAT RAYA',RUMAH_PONCOL[0]+50,18,RUMAH_PONCOL[2]+10);
+plang('JL. KAPTEN TENDEAN',RUMAH_PONCOL[0],RUMAH_PONCOL[2]-40,0);
+plang('JL. KUNINGAN BARAT RAYA',RUMAH_PONCOL[0]+50,RUMAH_PONCOL[2]+10,Math.PI/2);
 lab('PONCOL JAYA',RUMAH_PONCOL[0],14,RUMAH_PONCOL[2]);
 const P=SB.loadAsset('player',[RUMAH_PONCOL[0],0,RUMAH_PONCOL[2]-6]);  // awal di depan rumah, Poncol JayaSB.play(P,'idle');
 const car=dims(SB.loadAsset('mobil_player',[RUMAH_PONCOL[0]+8,0,RUMAH_PONCOL[2]-6]),[1.1,2.3]);
