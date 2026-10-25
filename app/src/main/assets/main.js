@@ -96,6 +96,53 @@ const lampL=[],treeL=[];
 for(let i=-HALF;i<=HALF;i++)for(let j=-HALF;j<=HALF;j++){lampL.push({x:i*BLOK+13,z:j*BLOK+13});for(const[ox,oz]of[[-13,-13],[13,-13],[-13,13]])treeL.push({x:i*BLOK+ox,z:j*BLOK+oz,rot:Math.random()*6.28,s:.8+Math.random()*.5})}
 if(SB.loadInstanced('tiang_lampu',lampL))lampL.forEach(l=>CI.push([l.x,l.z,.35]));
 if(SB.loadInstanced('pohon_1',treeL))treeL.forEach(t=>CI.push([t.x,t.z,.5]));
+
+// ---- marka jalan, jalur sepeda, flyover, lapangan GBK (Jakarta Selatan) ----
+const roadMat=(c,o=1)=>new THREE.MeshBasicMaterial({color:c,transparent:o<1,opacity:o});
+// jalan raya grid: garis tengah kuning + garis tepi putih
+for(let k=-7;k<=7;k++){
+  const z=k*40+20;
+  // garis tengah (kuning putus-putus) sepanjang x
+  for(let s=-7;s<=7;s++){
+    const seg=new THREE.Mesh(new THREE.PlaneGeometry(6,1.2),roadMat(0xffd23a));
+    seg.rotation.x=-Math.PI/2;seg.position.set(s*40+20,.04,z);S.add(seg);
+  }
+  // garis tepi putih
+  for(const off of [-14,14]){
+    const e=new THREE.Mesh(new THREE.PlaneGeometry(560,0.6),roadMat(0xffffff));
+    e.rotation.x=-Math.PI/2;e.position.set(0,.04,z+off);S.add(e);
+  }
+}
+for(let k=-7;k<=7;k++){
+  const x=k*40+20;
+  for(let s=-7;s<=7;s++){
+    const seg=new THREE.Mesh(new THREE.PlaneGeometry(1.2,6),roadMat(0xffd23a));
+    seg.rotation.x=-Math.PI/2;seg.position.set(x,.04,s*40+20);S.add(seg);
+  }
+  for(const off of [-14,14]){
+    const e=new THREE.Mesh(new THREE.PlaneGeometry(0.6,560),roadMat(0xffffff));
+    e.rotation.x=-Math.PI/2;e.position.set(x+off,.04,0);S.add(e);
+  }
+}
+// jalur sepeda (hijau) di beberapa jalan
+for(let k=-3;k<=3;k++){
+  const z=k*40+20;
+  const bl=new THREE.Mesh(new THREE.PlaneGeometry(560,3),roadMat(0x2ecc71,.85));
+  bl.rotation.x=-Math.PI/2;bl.position.set(0,.05,z-10);S.add(bl);
+
+}
+// flyover (jalan layang) di atas salah satu jalan utama
+const fly=new THREE.Mesh(new THREE.BoxGeometry(260,1,16),new THREE.MeshStandardMaterial({color:0x555555,roughness:.9}));
+fly.position.set(0,9,0);S.add(fly);
+// tiang penyangga flyover
+for(let i=-4;i<=4;i++){const p=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,9,8),new THREE.MeshStandardMaterial({color:0x888888}));p.position.set(i*30,4.5,0);S.add(p)}
+// lapangan GBK: alas hijau + tribun sederhana di sekitar stadion (stadion_gbk sudah di slot i=-3,j=3)
+const gbkX=-3*40,gbkZ=3*40;
+const field=new THREE.Mesh(new THREE.PlaneGeometry(90,120),new THREE.MeshStandardMaterial({color:0x2e8b57}));
+field.rotation.x=-Math.PI/2;field.position.set(gbkX,.06,gbkZ);S.add(field);
+// signage Jakarta Selatan (Indomaret dll) sebagai label di atas ruko area Kuningan
+[['INDOMARET',82,129],['ALFAMART',92,119],['WARUNG NASI',70,118],['BENGKEL MOTOR',60,108]].forEach(a=>lab(a[0],a[1],16,a[2]));
+
 // ---- karakter & kendaraan (GLB)
 const dims=(g,d)=>{const s=g.userData.size;g.userData.hw=s.x>0?s.x/2:d[0];g.userData.hl=s.z>0?s.z/2:d[1];return g};
 const RUMAH_PONCOL=[72,0,108];
