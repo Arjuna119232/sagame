@@ -165,19 +165,63 @@ field.rotation.x=-Math.PI/2;field.position.set(gbkX,.06,gbkZ);S.add(field);
 // signage Jakarta Selatan (Indomaret dll) sebagai label di atas ruko area Kuningan
 [['INDOMARET',82,129],['ALFAMART',92,119],['WARUNG NASI',70,118],['BENGKEL MOTOR',60,108]].forEach(a=>lab(a[0],a[1],16,a[2]));
 
+// ---- plang jalan tambahan dari data OSM (Jakarta Selatan) ----
+const JALAN_OSM = [
+ ['JL. PONCOL GANG I',-22,-8],['JL. PONCOL GANG II',-14,-14],['JL. PONCOL GANG III',-6,-20],
+ ['JL. PONCOL GANG IV',2,-24],['JL. PONCOL GANG V',10,-22],['JL. PONCOL GANG XI',22,2],
+ ['JL. PONCOL GAN VIII',-10,-16],['JL. PONCOL',-28,4],['JL. BANGKA RAYA',40,-6],
+ ['JL. BANGKA I',46,6],['JL. BANGKA II',52,14],['JL. BANGKA I A',44,-14],
+ ['JL. KEBALAN I',-34,8],['JL. KEBALAN II',-40,16],['JL. KEBALAN III',-32,22],
+ ['JL. KEBALAN IV',-26,28],['JL. KEBALAN V',-20,32],['JL. KEBALAN VI',-14,36],
+ ['JL. KEBALAN VII',-8,40],['JL. RENGAS I',-46,-6],['JL. RENGAS II',-52,2],
+ ['JL. RENGAS III',-44,10],['JL. RENGAS',-38,-12],['JL. TURI I',-30,-24],
+ ['JL. TURI II',-24,-30],['JL. TURI III',-18,-34],['JL. PONDOK KARYA I',-44,24],
+ ['JL. PONDOK KARYA II',-38,30],['JL. PONDOK KARYA III',-32,36],
+ ['JL. LAKSANA I',34,-28],['JL. LAKSANA II',40,-22],['JL. LAKSANA III',46,-16],
+ ['JL. BIRAH I',54,-8],['JL. BIRAH II',58,0],['JL. BIRAH III',52,8],
+ ['JL. BIRAH IV',48,16],['JL. BIRAH RAYA',60,-14],['JL. EM pang I'.replace(' ',''),0,0] if false else ['JL. EMPANG I',-48,-20],
+ ['JL. SUREN II',-56,10],['JL. SUREN III',-50,18],['JL. CIPAKU',30,-34],
+ ['JL. CIPAKU I',36,-30],['JL. CIASEM I',42,-26],['JL. CIASEM III',48,-20],
+ ['JL. CIASEM IV',54,-14],['JL. CISANGGIRI II',24,-40],['JL. CISANGGIRI IV',30,-36],
+ ['JL. CISANGGIRI V',36,-32],['JL. CINIRU III',18,-44],['JL. CINIRU VII',24,-48],
+ ['JL. CIKATOMAS II',12,-42],['JL. WIDYA CHANDRA IX',-6,44],
+ ['JL. WIJAYA I',-44,-34],['JL. WIJAYA II',-38,-30],['JL. WIJAYA KARTA I',-30,-38],
+ ['JL. WIJAYA KARTA II',-24,-34],['JL. WIJAYA KARTA III',-18,-30],
+ ['JL. WIJAYA KARTA IV',-12,-26],['JL. WIJAYA TIMUR I',6,-34],
+ ['JL. WIJAYA TIMUR II',12,-30],['JL. WIJAYA TIMUR IV',18,-26],
+ ['JL. WIJAYA TIMUR V',24,-22],['JL. WIJAYA TIMUR VI',30,-18],
+ ['JL. WIJAYA TIMUR RAYA',14,-40],['JL. DARUSSALAM',-58,-24],
+ ['JL. SENAYAN',-62,-10],['JL. SURYO RAYA',-56,-2], ['JL. SURYO',-50,6],
+ ['JL. PANCOL GANG VI',-40,-40],['JL. PECANDRAN',-34,-44],
+ ['JL. DARMawati'.upper() if False else 'JL. KOMPLEK POLRI',-28,-48],
+ ['JL. PONDOK KARYA V',-22,-44],['JL. PONDOK KARYA',-16,-40],
+ ['JL. PECANDRAN',-42,-34],['JL. HAJI ABDUL KARIM',-48,28],
+ ['JL. HAJI HASAN',-52,34],['JL. HAJI MALIKI',-46,40],
+ ['JL. HAJI MARAIS',-40,44],['JL. HAJI NAWAR',-34,48],
+ ['JL. HAJI ROYANI',-28,44],['JL. JATI',-22,40],['JL. MENARA',-16,36],
+ ['JL. SAIRI',-10,40],['JL. SWADAYA',-4,44],['JL. MINI 1',2,48],
+ ['JL. MINI 2',8,44],['JL. MINI 3',14,40],
+ ['JL. AMAL I',20,36],['JL. AMAL II',26,32],
+ ['JL. KAPten Tendean'.upper(),-8,-50],
+];
+JALAN_OSM.forEach(([n,dx,dz],i)=>{
+  const x=RUMAH_PONCOL[0]+dx, z=RUMAH_PONCOL[2]+dz;
+  plang(n,x,z, (Math.abs(dx)>Math.abs(dz))?Math.PI/2:0);
+});
+
 // ---- karakter & kendaraan (GLB)
 const dims=(g,d)=>{const s=g.userData.size;g.userData.hw=s.x>0?s.x/2:d[0];g.userData.hl=s.z>0?s.z/2:d[1];return g};
 const RUMAH_PONCOL=[72,0,108];
-SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);
+const _hr0=SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);BU.push({x:RUMAH_PONCOL[0],z:RUMAH_PONCOL[2],r:Math.max(_hr0.userData.size.x,_hr0.userData.size.z)/2*.85});
 // pintu rumah menghadap selatan; spawn tepat di depan pintu supaya tidak nyangkut di tembok
 // ---- klaster Poncol Jaya: gang-gang sempit + rumah + toko (data nama gang dari OSM) ----
 const GPN=[['Gang Poncol',RUMAH_PONCOL[0]-18,RUMAH_PONCOL[2]+6],['Gang Poncol Jaya',RUMAH_PONCOL[0]+4,RUMAH_PONCOL[2]+14],['Gang Poncol Gang XI',RUMAH_PONCOL[0]+22,RUMAH_PONCOL[2]+2],['Gang Poncol Gan VIII',RUMAH_PONCOL[0]-10,RUMAH_PONCOL[2]-16],['Gang Mini 1',RUMAH_PONCOL[0]+14,RUMAH_PONCOL[2]-12],['Gang Mini 2',RUMAH_PONCOL[0]-2,RUMAH_PONCOL[2]-22],['Gang Mini 3',RUMAH_PONCOL[0]+18,RUMAH_PONCOL[2]-20],['Gang Amal I',RUMAH_PONCOL[0]-24,RUMAH_PONCOL[2]+12],['Gang Amal II',RUMAH_PONCOL[0]+26,RUMAH_PONCOL[2]+10],['Gang Jati',RUMAH_PONCOL[0]-16,RUMAH_PONCOL[2]+24],['Gang Swadaya',RUMAH_PONCOL[0]+8,RUMAH_PONCOL[2]+26],['Gang Menara',RUMAH_PONCOL[0]+20,RUMAH_PONCOL[2]+20]];
 GPN.forEach(([n,x,z],i)=>{plang(n,x,z, (i%2===0)?0:Math.PI/2);});
 // rumah-rumah kecil sepanjang gang
-for(let i=0;i<18;i++){const a=GPN[i%GPN.length];const rx=a[1]+(Math.random()-.5)*6,rz=a[2]+(Math.random()-.5)*6;SB.loadAsset('rumah_menteng_1',[rx,0,rz],(Math.random()*4|0)*Math.PI/2)}
+for(let i=0;i<18;i++){const a=GPN[i%GPN.length];const rx=a[1]+(Math.random()-.5)*6,rz=a[2]+(Math.random()-.5)*6;const _h=SB.loadAsset('rumah_menteng_1',[rx,0,rz],(Math.random()*4|0)*Math.PI/2);BU.push({x:rx,z:rz,r:Math.max(_h.userData.size.x,_h.userData.size.z)/2*.85})}
 // toko Indomaret/Alfamart di mulut gang
-SB.loadAsset('ruko_1',[RUMAH_PONCOL[0]+30,0,RUMAH_PONCOL[2]-8],Math.PI/2);plang('INDOMARET',RUMAH_PONCOL[0]+30,RUMAH_PONCOL[2]-8,Math.PI/2);
-SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.PI/2);plang('ALFAMART',RUMAH_PONCOL[0]-28,RUMAH_PONCOL[2]-6,-Math.PI/2);
+const _r1=SB.loadAsset('ruko_1',[RUMAH_PONCOL[0]+30,0,RUMAH_PONCOL[2]-8],Math.PI/2);BU.push({x:RUMAH_PONCOL[0]+30,z:RUMAH_PONCOL[2]-8,r:Math.max(_r1.userData.size.x,_r1.userData.size.z)/2*.85});plang('INDOMARET',RUMAH_PONCOL[0]+30,RUMAH_PONCOL[2]-8,Math.PI/2);
+const _r2=SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.PI/2);BU.push({x:RUMAH_PONCOL[0]-28,z:RUMAH_PONCOL[2]-6,r:Math.max(_r2.userData.size.x,_r2.userData.size.z)/2*.85});plang('ALFAMART',RUMAH_PONCOL[0]-28,RUMAH_PONCOL[2]-6,-Math.PI/2);
 // jalan kapten tendean (jalan utama) label
 plang('JL. KAPTEN TENDEAN',RUMAH_PONCOL[0],RUMAH_PONCOL[2]-40,0);
 plang('JL. KUNINGAN BARAT RAYA',RUMAH_PONCOL[0]+50,RUMAH_PONCOL[2]+10,Math.PI/2);
