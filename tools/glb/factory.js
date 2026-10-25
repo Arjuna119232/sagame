@@ -3,6 +3,7 @@
 // Conventions from README: meters, origin at bottom centre, facing +Z, PBR materials.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { KOTA } from '../../app/src/main/assets/KotaData.js';
 
 /* ------------------------------------------------------------------ materials */
@@ -202,6 +203,36 @@ function towerBlock({ w = 14, d = 14, h = 24, setback = true, wall = 0xc9cfd6, s
     g.add(mesh(tiledBox(w2, h2, d2, 4), skin, 0, h1 + h2 / 2 + 0.4, 0));
     g.add(mesh(new THREE.BoxGeometry(w2 + 0.5, 0.4, d2 + 0.5), std(0x9aa0a6, { r: 0.9 }), 0, h + 0.6, 0));
   }
+  return { root: g };
+}
+
+function apartment({ w = 22, d = 16, h = 54, wall = 0xe3dcd0, seed = 71 } = {}) {
+  const g = new THREE.Group();
+  const { map, em } = windowTexture(wall, 0xffe0a0, seed);
+  const skin = std(0xffffff, { map, em, e: 0xffffff, r: 0.82 });
+  // podium: lobi + parkir, lebih lebar dari slab
+  g.add(mesh(new THREE.BoxGeometry(w + 6, 5, d + 8), std(0xbfb6a8, { r: 0.9 }), 0, 2.5, 0));
+  // slab hunian
+  g.add(mesh(tiledBox(w, h, d, 3.2), skin, 0, h / 2 + 5, 0));
+  // pita balkon tiap ~3 lantai — digabung jadi satu geometri supaya tetap 1 draw call
+  const bal = std(0xdfe3e6, { r: 0.8 }), strips = [];
+  for (let y = 8; y < h; y += 3.2) {
+    for (const zz of [d / 2 + 0.5, -d / 2 - 0.5]) {
+      const bg = new THREE.BoxGeometry(w + 0.6, 0.18, 1.1);
+      bg.translate(0, y + 5, zz);
+      strips.push(bg);
+    }
+  }
+  if (strips.length) g.add(mesh(mergeGeometries(strips), bal, 0, 0, 0));
+  g.add(mesh(new THREE.BoxGeometry(w + 0.8, 0.5, d + 0.8), std(0x9aa0a6, { r: 0.9 }), 0, h + 5.25, 0));
+  // tangki air + antena atap
+  for (const x of [-w * 0.28, w * 0.28]) {
+    g.add(mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.6, 10), std(0x8fa3b0, { r: 0.5, m: 0.4 }), x, h + 6.8, 0));
+  }
+  g.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 8, 6), METAL(0xb0b4b8), w * 0.4, h + 9.5, -d * 0.2));
+  // papan nama tower
+  g.add(mesh(new THREE.BoxGeometry(w * 0.5, 1.6, 0.3), std(0x2f3b46, { r: 0.7 }), 0, h + 3.4, d / 2 + 0.2));
+  g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
   return { root: g };
 }
 
@@ -658,6 +689,12 @@ export const REGISTRY = {
   'assets/models/characters/ped_m2.glb': () => character({ skin: 0x8f5a34, shirt: 0x2e86c1, pants: 0x1a1a1a, cap: true }),
   'assets/models/characters/ped_h1.glb': () => character({ skin: 0xc79a6c, shirt: 0x7d3c98, pants: 0x7d3c98, hijab: true, hijabColor: 0xece2d0, dress: 0x7d3c98 }),
   'assets/models/characters/ped_p1.glb': () => character({ skin: 0xa8703f, shirt: 0x1c1c1c, pants: 0x2b2b33, mohawk: true, mohawkColor: 0xd0527a }),
+  // anak/remaja (0-19 th): tinggi 0,79 x dewasa ~1,45 m
+  'assets/models/characters/ped_a1.glb': () => {
+    const c = character({ skin: 0xc09060, shirt: 0x27ae60, pants: 0x34495e, cap: true, capColor: 0xe67e22 });
+    c.root.scale.setScalar(0.79);
+    return c;
+  },
 
   'assets/models/vehicles/mobil_player.glb': () => car({ body: 0xc01818, roof: 0x8e1010 }),
   'assets/models/vehicles/mobil_umum_1.glb': () => car({ body: 0x4a78b8 }),
@@ -677,6 +714,7 @@ export const REGISTRY = {
   'assets/models/buildings/gedung_kolonial_1.glb': () => colonialBuilding({}),
   'assets/models/buildings/gedung_umum_1.glb': () => towerBlock({ w: 15, d: 14, h: 22, setback: false, wall: 0xd2d7dc, seed: 41 }),
   'assets/models/buildings/gedung_umum_2.glb': () => towerBlock({ w: 13, d: 13, h: 30, setback: true, wall: 0xcbd3d9, seed: 43 }),
+  'assets/models/buildings/apartemen_1.glb': () => apartment(),
   'assets/models/buildings/monas.glb': () => monas(),
   'assets/models/buildings/bundaran_hi.glb': () => bundaranHI(),
   'assets/models/buildings/stadion_gbk.glb': () => stadium(),

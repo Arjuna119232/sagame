@@ -36,7 +36,7 @@ const byUrl = new Map(EXPECTED.map((e) => [e.url, e]));
 /* --------------------------------------------------------------- validation rules */
 
 const RULES = {
-  characters: { minH: 1.5, maxH: 2.2, maxW: 1.2, clips: ['idle', 'walk', 'run', 'punch'] },
+  characters: { minH: 1.3, maxH: 2.2, maxW: 1.2, clips: ['idle', 'walk', 'run', 'punch'] },
   vehicles: { minH: 0.8, maxH: 4.2, maxW: 3.0, maxL: 13.5, wheels: 4 },
   buildings: { minH: 3, maxH: 80, maxW: 32, maxL: 32 },
   props: { minH: 1, maxH: 9, maxW: 6, maxL: 6 },
@@ -198,7 +198,7 @@ async function startServer() {
     if (def.id === 'dufan_bianglala' && !r.nodes.some((n) => /wheel|roda|bianglala|rotor/i.test(n))) {
       errs.push('node pemutar bianglala tidak ada');
     }
-    if (['gedung_pencakar_1', 'gedung_pencakar_2', 'ruko_1', 'ruko_2', 'gedung_umum_1', 'gedung_umum_2'].includes(def.id)) {
+    if (['gedung_pencakar_1', 'gedung_pencakar_2', 'ruko_1', 'ruko_2', 'gedung_umum_1', 'gedung_umum_2', 'apartemen_1'].includes(def.id)) {
       if (!r.emissive) errs.push('tidak ada emissiveMap (jendela tidak menyala saat malam)');
     }
 

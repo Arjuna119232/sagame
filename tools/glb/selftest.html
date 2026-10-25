@@ -34,7 +34,7 @@ window.runSelfTest = async () => {
   const ids = [];
   for (const cat of Object.keys(man)) for (const it of man[cat]) ids.push(it.id);
 
-  ok('manifest termuat', ids.length === 29, `${ids.length} aset`);
+  ok('manifest termuat', ids.length === 31, `${ids.length} aset`);
   ok('tidak ada aset hilang', al.missing.length === 0, al.missing.join(', ') || 'lengkap');
 
   const scene = new THREE.Scene();
@@ -82,6 +82,15 @@ window.runSelfTest = async () => {
   const trG = sb.loadAsset('truk_1', [0, 0, 0]);
   ok('truk punya 4 roda', (trG.userData.wh || []).length === 4, `${(trG.userData.wh || []).length} node`);
   ok('motor lebih kecil dari mobil', moG.userData.size.z < carG.userData.size.z, `${moG.userData.size.z.toFixed(2)} m`);
+  const anakG = sb.loadAsset('ped_a1', [0, 0, 0]);
+  ok('anak (ped_a1) lebih pendek dari pemain', anakG.userData.size.y < pg.userData.size.y * 0.9,
+    `${anakG.userData.size.y.toFixed(2)} m vs ${pg.userData.size.y.toFixed(2)} m`);
+
+  // tower apartemen: lebih tinggi dari blok umum, jendela menyala
+  const aptG = sb.loadAsset('apartemen_1', [0, 0, 0]);
+  const umumG = sb.loadAsset('gedung_umum_1', [0, 0, 0]);
+  ok('tower apartemen lebih tinggi dari blok umum', aptG.userData.size.y > umumG.userData.size.y * 2,
+    `${aptG.userData.size.y.toFixed(1)} m vs ${umumG.userData.size.y.toFixed(1)} m`);
 
   // 4. bianglala: node pemutar ditemukan main.js lewat regex nama
   const fg = sb.loadAsset('dufan_bianglala', [0, 0, 0]);
@@ -111,6 +120,33 @@ window.runSelfTest = async () => {
     for (const m of [].concat(o.material)) if (m.emissiveMap) (m.emissiveIntensity === 0 ? dayOff++ : dayOn++);
   });
   ok('jendela padam saat siang', dayOn === 0, `${dayOff} mati / ${dayOn} nyala`);
+
+  // 5b. tower apartemen ikut menyala malam
+  setDay(1);
+  let aptNight = 0;
+  aptG.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) if (m.emissiveMap && m.emissiveIntensity > 1) aptNight++;
+  });
+  ok('jendela tower apartemen menyala', aptNight > 0, `${aptNight} material`);
+  setDay(0);
+
+  // 5c. data kota -> jumlah objek dunia
+  const K = await import('/app/src/main/assets/KotaData.js');
+  const npc = K.komposisiNPC(K.JUMLAH_NPC);
+  ok('NPC = penduduk peta / skala', K.JUMLAH_NPC === 39, `${K.JUMLAH_NPC} orang`);
+  ok('komposisi umur terisi', npc.length === K.JUMLAH_NPC && npc.includes('ped_a1'),
+    `${npc.filter((x) => x === 'ped_a1').length} anak dari ${npc.length}`);
+  ok('kendaraan di peta = kendaraan peta / skala', K.MAX_LALULINTAS === 45, `${K.MAX_LALULINTAS} unit`);
+  ok('tower apartemen dari data', K.jumlahMenara() === 24 && K.menaraTotal() === 383,
+    `${K.jumlahMenara()} dari ${K.menaraTotal()} menara`);
+
+  // 5d. instancing gedung: 24 tower -> sedikit draw call
+  const towers = Array.from({ length: 24 }, (_, i) => ({ x: i * 40, z: 0, rot: i }));
+  const inst = sb.loadInstanced('apartemen_1', towers);
+  const instCount = inst ? inst.children.reduce((a, m) => a + (m.isInstancedMesh ? m.count : 0), 0) : 0;
+  ok('instancing gedung 24 tower', !!inst && instCount === 24 * inst.children.length && inst.children.length < 10,
+    `${inst ? inst.children.length : 0} mesh untuk 24 tower`);
 
   // 6. instancing pohon & tiang (jalur loadInstanced)
   const tree = sb.loadInstanced('pohon_1', [{ x: 0, z: 0 }, { x: 5, z: 5, s: 1.2 }]);

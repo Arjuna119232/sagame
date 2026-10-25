@@ -9,7 +9,7 @@ landscape) dengan package `com.karta.sagame`.
   agar ES module dan `fetch()` aset `.glb` berjalan (bukan `file://`)
 - Jembatan JS → native: `window.Android.quit()`
 
-> **Status v0.6:** seluruh 29 aset `.glb` (5 karakter, 9 kendaraan, 12 gedung,
+> **Status v0.7:** seluruh 31 aset `.glb` (6 karakter, 9 kendaraan, 13 gedung,
 > 3 properti) **sudah ada di repo** dan dimuat tanpa `MISSING ASSET`. Model dibuat
 > secara programatik lewat `tools/glb/` sehingga bisa dibangun ulang kapan saja —
 > lihat [Regenerasi aset](#regenerasi-aset). Sejak v0.6 angka kota (penduduk, luas,
@@ -29,7 +29,7 @@ app/src/main/
 │   ├── MaterialSetup.js                # renderer PBR, lighting, HDR env, siang-malam
 │   ├── intro.mp4                       # video splash (tools/make_intro.py)
 │   ├── assets/
-│   │   ├── manifest.json               # daftar 29 aset + url/scale/yaw
+│   │   ├── manifest.json               # daftar 31 aset + url/scale/yaw
 │   │   ├── env/sky.hdr                 # HDRI gradasi (tools/make_sky.py)
 │   │   └── models/{characters,buildings,vehicles,props}/*.glb
 │   └── vendor/three/                   # three.js r160 (diunduh CI, gitignore)
@@ -38,7 +38,7 @@ app/src/main/
 
 tools/make_intro.py                     # generator video splash (Pillow + ffmpeg)
 tools/make_sky.py                       # generator HDRI langit (Radiance .hdr)
-tools/glb/factory.js                    # resep 29 model: gedung, kendaraan, karakter, props
+tools/glb/factory.js                    # resep 31 model: gedung, kendaraan, karakter, props
 tools/glb/build-assets.js               # ekspor + validasi GLB (Chromium headless)
 tools/glb/selftest.js                   # uji integrasi pakai modul game asli
 tools/glb/preview.html                  # grid pratinjau semua model di browser
@@ -79,7 +79,7 @@ npm i playwright-core && npx playwright install chromium
 # bila Chromium tidak terdeteksi otomatis:
 # export CHROME_PATH=/path/ke/chrome
 
-# tulis ulang ke-29 GLB + validasi kontrak (ukuran, origin, klip, roda, emissive)
+# tulis ulang ke-31 GLB + validasi kontrak (ukuran, origin, klip, roda, emissive)
 bun tools/glb/build-assets.js
 
 # hanya memeriksa GLB yang sudah ada (tanpa menulis)
@@ -99,9 +99,9 @@ menyaring kategori.
 
 ### ID yang dipakai game
 
-`characters`: player, ped_m1, ped_m2, ped_h1, ped_p1 ·
+`characters`: player, ped_m1, ped_m2, ped_h1, ped_p1, ped_a1 (anak/remaja) ·
 `vehicles`: mobil_player, mobil_umum_1, mobil_umum_2, taksi_bluebird, bus_transjakarta, bajaj, mobil_polisi, motor_1, truk_1 ·
-`buildings`: gedung_pencakar_1/2, ruko_1/2, rumah_menteng_1, gedung_kolonial_1, gedung_umum_1/2, monas, bundaran_hi, stadion_gbk, dufan_bianglala ·
+`buildings`: gedung_pencakar_1/2, ruko_1/2, rumah_menteng_1, gedung_kolonial_1, gedung_umum_1/2, apartemen_1, monas, bundaran_hi, stadion_gbk, dufan_bianglala ·
 `props`: pohon_1, tiang_lampu, bendera
 
 ### Lingkungan & sumber aset
@@ -128,26 +128,59 @@ komposisi lalu lintas) dihitung dari berkas itu.
 | Kelompok umur 0-9 / 10-19 / 20-64 / 65+ | `umur[]` | baris layar PROFIL KOTA |
 | Luas darat 661,53 km², laut 6.977,5 km², total 7.639,83 km² | `luasDarat`, `luasLaut`, `luasTotal` | baris luas + dasar kepadatan |
 | Kepadatan ±16.144 jiwa/km² | **turunan**: `penduduk / luasDarat` | baris luas |
-| Kendaraan 12.279.058: motor 9.376.276, mobil 2.336.960, truk 527.841, bus 37.981 | `kendaraan` | **komposisi lalu lintas** (motor 76,4% · mobil 19,0% · truk 4,3% · bus 0,3%) |
+| Kendaraan 12.279.058: motor 9.376.276, mobil 2.336.960, truk 527.841, bus 37.981 | `kendaraan` | **komposisi + jumlah lalu lintas** (motor 76,4% · mobil 19,0% · truk 4,3% · bus 0,3%) |
 | Rumah milik sendiri 54,54% | `rumahMilik` | peluang jendela menyala malam (dipakai `tools/glb/factory.js`) |
-| Apartemen ±46.000, gedung audit ±3.500 | `apartemen`, `gedungDiperiksa` | baris layar PROFIL KOTA |
+| Apartemen ±46.000 | `apartemen` | **jumlah tower apartemen** di peta (24 tower) |
+| Gedung audit ±3.500 | `gedungDiperiksa` | pembagi porsi tower + baris panel |
+| Kepadatan 16.144 jiwa/km² | turunan | **jumlah pejalan kaki (NPC)** |
+| Kepadatan 18.562 kendaraan/km² | turunan | **jumlah kendaraan** yang di-spawn |
+| Rasio umur 0-19 / 20-64 / 65+ | `umur[]` | **komposisi model NPC** (anak · dewasa · lansia) |
 
-Cara kerja lalu lintas: 28 kendaraan di-spawn sekali saat dunia dibangun
-(`MAX_LALULINTAS`), jumlah yang **tampil** diatur pengaturan LALU LINTAS
-(12 / 18 / 28) lewat `visible`. Komposisinya dihitung `bagiKendaraan()` dengan metode
+### Dari data ke gameplay (v0.7)
+
+```
+luas peta      = 600 x 600 m                      = 0,36 km²
+penduduk peta  = 16.144 jiwa/km² x 0,36 km²       = 5.812 jiwa
+kendaraan peta = 18.562 kendaraan/km² x 0,36 km²  = 6.682 kendaraan
+skala main     = 1 : 150   (batas yang masih bisa dirender di ponsel)
+   -> NPC        = 5.812 / 150 = 39 orang
+   -> kendaraan  = 6.682 / 150 = 45 unit
+tower          = (46.000 unit / 120 unit per tower) / 3.500 gedung audit
+   -> 10,9% x 221 bangunan     = 24 tower
+```
+
+`SKALA = 150` dan `UNIT_PER_MENARA = 120` **bukan angka statistik** — itu asumsi
+permainan, ditulis di `KotaData.js` dan di layar PROFIL KOTA. Ganti angkanya di
+satu tempat itu untuk membuat kota lebih padat atau lebih ringan.
+
+Komposisi pejalan kaki memakai porsi tabel umur: 0-19 th → `ped_a1`, 20-64 th →
+`ped_m1/m2/p1`, 65+ → `ped_h1`. Hasil v0.7: 39 NPC = 11 anak, 25 dewasa, 3 lansia.
+
+Cara kerja lalu lintas: 45 kendaraan di-spawn sekali saat dunia dibangun
+(`MAX_LALULINTAS` = 45), jumlah yang **tampil** diatur pengaturan LALU LINTAS
+(16 / 30 / 45) lewat `visible`. Komposisinya dihitung `bagiKendaraan()` dengan metode
 sisa terbesar dari rasio nyata, lalu `rencanaLaluLintas()` memecahnya jadi id GLB:
 motor → `motor_1`, mobil → campuran `mobil_umum_1/2`, `taksi_bluebird`, `bajaj`
 (bobot 45/30/15/10), truk → `truk_1`, bus → `bus_transjakarta`.
 
 Penyimpangan yang disengaja (dan ditulis di panel):
 
+- **Skala 1:150.** Jakarta asli berisi 16.144 orang/km²; menerjemahkannya 1:1 ke
+  peta 600x600 m berarti ~5.800 NPC dan ~6.700 kendaraan, mustahil di ponsel.
 - **Bus & truk dapat kuota minimum 1** saat n ≥ 12. Porsi aslinya 0,3% dan 4,3%,
   sehingga tanpa kuota bus tidak pernah muncul (ikon TransJakarta hilang).
 - **Jendela menyala 54,54%** adalah analogi dari angka rumah milik sendiri, bukan
   data pemakaian listrik.
-- **Kepadatan tidak diterapkan ke dunia game.** Peta hanya 440x440 m ≈ 0,19 km²
-  (≈ 0,03% daratan Jakarta), jadi menerapkan 16.144 jiwa/km² akan berarti ~3.100
-  NPC di satu layar. Dunia tetap 110 bangunan seperti v0.5.
+- **Peta tetap kecil dibanding Jakarta.** 600x600 m ≈ 0,36 km² ≈ 0,05% daratan;
+  itulah alasan skala 1:150 dipakai.
+
+### Performa
+
+221 bangunan dipasang sebagai `InstancedMesh` per tipe (`SceneBuilder.loadInstanced`),
+bukan clone per gedung: 24 tower apartemen = 8 draw call, bukan ~190. Tanpa ini
+600x600 m akan jadi ~1.100 draw call dan ponsel menengah akan tersendat.
+Pejalan kaki tetap mesh per karakter (39 x ±19 mesh) karena tiap karakter
+dianimasikan sendiri.
 
 Ketidakcocokan di data sumber ditampilkan apa adanya, tidak "diperbaiki" di kode:
 
@@ -231,11 +264,18 @@ ANDROID_HOME=/opt/android-sdk ./gradlew assembleDebug
 ## Rilis
 
 APK debug ditandatangani debug keystore dan diunggah sebagai asset GitHub Release
-(`v0.1`–`v0.6`). Untuk distribusi serius, buat keystore rilis sendiri dan
+(`v0.1`–`v0.7`). Untuk distribusi serius, buat keystore rilis sendiri dan
 konfigurasikan `signingConfigs` di `app/build.gradle`.
 
 ## Riwayat versi
 
+- **v0.7** — **data kota jadi dunia**: peta diperbesar ke 600x600 m (15x15 blok,
+  221 bangunan), jumlah kendaraan (45) dan pejalan kaki (39) dihitung dari
+  kepadatan Jakarta dengan skala 1:150, komposisi NPC mengikuti kelompok umur
+  (anak/dewasa/lansia), dan 24 tower apartemen berasal dari 46.000 unit
+  apartemen ÷ 120 unit/menara dibanding sampel 3.500 gedung audit. Tambah 2 GLB
+  (`apartemen_1`, `ped_a1`) → 31 aset. Bangunan di-*instance* agar tetap ringan.
+  Perbaikan: pemain dulu spawn di dalam radius Monas sehingga tidak bisa berjalan.
 - **v0.6** — **data kota jadi parameter**: `KotaData.js` memuat penduduk, kelompok
   umur, luas wilayah, dan jumlah kendaraan; komposisi lalu lintas mengikuti rasio
   nyata (motor 76,4%), jendela malam mengikuti 54,54% rumah milik, dan menu baru

@@ -30,8 +30,17 @@ export const KOTA = {
   luasTotal: 7639.83,
 };
 
-// Dunia game: 11x11 blok, satu blok 40 m (lihat main.js).
-export const DUNIA = { sisi: 440, blok: 11, blokM: 40, bangunan: 110 };
+// Dunia game: 15x15 blok, satu blok 40 m (lihat main.js).
+// 225 slot dikurangi 4 landmark (Monas, Bundaran HI, GBK, Dufan) = 221 bangunan.
+export const DUNIA = { sisi: 600, blok: 15, blokM: 40, bangunan: 221 };
+
+// Skala permainan: 1 kendaraan / 1 pejalan kaki di layar mewakili SKALA unit nyata.
+// Dipakai untuk menerjemahkan kepadatan Jakarta ke jumlah objek yang masih bisa
+// dirender di ponsel. Bukan angka statistik, jadi ditulis terang-terangan di panel.
+export const SKALA = 150;
+
+// Asumsi turunan (bukan data resmi): satu tower apartemen berisi ~120 unit.
+export const UNIT_PER_MENARA = 120;
 
 export const rasioKendaraan = () => {
   const k = KOTA.kendaraan;
@@ -43,8 +52,28 @@ export const rasioKendaraan = () => {
   };
 };
 
-// Jumlah kendaraan yang dispawn (yang tampil diatur pengaturan LALU LINTAS).
-export const MAX_LALULINTAS = 28;
+/* ------------------------------------------------- turunan: luas, kepadatan, skala */
+
+export const luasPetaKm2 = () => (DUNIA.sisi * DUNIA.sisi) / 1e6;
+export const porsiPeta = () => luasPetaKm2() / KOTA.luasDarat;
+export const kepadatan = () => KOTA.penduduk / KOTA.luasDarat;
+export const kepadatanKendaraan = () => KOTA.kendaraan.total / KOTA.luasDarat;
+
+/** Penduduk yang "diwakili" peta game (kepadatan asli x luas peta). */
+export const pendudukPeta = () => Math.round(kepadatan() * luasPetaKm2());
+/** Kendaraan yang "diwakili" peta game. */
+export const kendaraanPeta = () => Math.round(kepadatanKendaraan() * luasPetaKm2());
+
+/** Jumlah kendaraan yang dispawn (yang tampil diatur pengaturan LALU LINTAS). */
+export const MAX_LALULINTAS = Math.round(kendaraanPeta() / SKALA);
+
+/** Jumlah pejalan kaki (NPC) di dunia. */
+export const JUMLAH_NPC = Math.round(pendudukPeta() / SKALA);
+
+/** Tower apartemen: unit apartemen / unit per menara, dibandingkan sampel audit gedung. */
+export const menaraTotal = () => Math.round(KOTA.apartemen / UNIT_PER_MENARA);
+export const porsiMenara = () => menaraTotal() / KOTA.gedungDiperiksa;
+export const jumlahMenara = () => Math.round(DUNIA.bangunan * porsiMenara());
 
 // Variasi visual untuk slot "mobil penumpang" (bajaj & taksi tetap mobil penumpang).
 const MOBIL = [
@@ -89,6 +118,40 @@ export function bagiKendaraan(n) {
   return out;
 }
 
+/** Porsi kelompok umur (dari tabel umur itu sendiri, bukan dari total penduduk). */
+export function rasioUmur() {
+  const t = KOTA.umur.reduce((a, u) => a + u.jumlah, 0);
+  const [a, b, c, d] = KOTA.umur.map((u) => u.jumlah / t);
+  return { anak: a + b, dewasa: c, lansia: d };   // 0-19 th, 20-64 th, 65+
+}
+
+/**
+ * Daftar id GLB pejalan kaki untuk n NPC, mengikuti porsi umur.
+ * anak/remaja -> ped_a1, dewasa -> ped_m1/m2/p1, lansia -> ped_h1.
+ */
+export function komposisiNPC(n, rand = Math.random) {
+  const r = rasioUmur();
+  const jenis = ['anak', 'dewasa', 'lansia'];
+  const exact = jenis.map((j) => n * r[j]);
+  const out = {};
+  jenis.forEach((j, i) => { out[j] = Math.floor(exact[i]); });
+  let sisa = n - jenis.reduce((a, j) => a + out[j], 0);
+  const order = jenis
+    .map((j, i) => ({ j, frac: exact[i] - Math.floor(exact[i]) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let i = 0; i < sisa; i++) out[order[i % jenis.length].j]++;
+
+  const ids = [];
+  for (let i = 0; i < out.anak; i++) ids.push('ped_a1');
+  for (let i = 0; i < out.dewasa; i++) ids.push(['ped_m1', 'ped_m2', 'ped_p1'][i % 3]);
+  for (let i = 0; i < out.lansia; i++) ids.push('ped_h1');
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+
 /** Daftar id GLB untuk n kendaraan, sudah diacak. */
 export function rencanaLaluLintas(n, rand = Math.random) {
   const b = bagiKendaraan(n);
@@ -111,14 +174,8 @@ export const persen = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%'
 /** km² dengan pemisah ribuan/desimal Indonesia, mis. 6977.5 -> "6.977,5". */
 export const km2 = (x) => x.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' km&sup2;';
 
-/** Kepadatan penduduk di daratan (jiwa/km²) - turunan, bukan angka tabel. */
-export const kepadatan = () => KOTA.penduduk / KOTA.luasDarat;
-
 /** Selisih antara luas total resmi dan (darat + laut). */
 export const selisihLuas = () => KOTA.luasTotal - (KOTA.luasDarat + KOTA.luasLaut);
-
-/** Porsi daratan Jakarta yang benar-benar dibangun jadi peta game (0..1). */
-export const porsiPeta = () => (DUNIA.sisi * DUNIA.sisi) / 1e6 / KOTA.luasDarat;
 
 /** Isi layar PROFIL KOTA (HTML). Angka mentah ditampilkan apa adanya. */
 export function profilKotaHtml() {
@@ -159,8 +216,11 @@ ${baris('Gedung', '&plusmn;' + angka(KOTA.gedungDiperiksa) + ' (sampel audit)')}
 ${baris('Luas peta', DUNIA.sisi + '&times;' + DUNIA.sisi + ' m &asymp; ' + luas.toFixed(2).replace('.', ',') + ' km&sup2;')}
 ${baris('Porsi daratan Jakarta', '&asymp; ' + persen(porsiPeta(), 2), 1)}
 ${baris('Blok', DUNIA.blok + '&times;' + DUNIA.blok + ' &middot; ' + DUNIA.bangunan + ' bangunan', 1)}
-${baris('Lalu lintas', 'mengikuti rasio di atas', 1)}
-${baris('Jendela menyala malam', persen(KOTA.rumahMilik), 1)}
+${baris('Tower apartemen', jumlahMenara() + ' dari &plusmn;' + angka(menaraTotal()) + ' menara', 1)}
+${baris('Kendaraan di peta', MAX_LALULINTAS + ' unit &mdash; skala 1:' + SKALA, 1)}
+${baris('Pejalan kaki (NPC)', JUMLAH_NPC + ' orang &mdash; skala 1:' + SKALA, 1)}
+${baris('Komposisi pejalan kaki', 'anak ' + Math.round(rasioUmur().anak * 100) + '% &middot; dewasa ' + Math.round(rasioUmur().dewasa * 100) + '% &middot; lansia ' + Math.round(rasioUmur().lansia * 100) + '%', 1)}
+${baris('Jendela menyala malam', persen(KOTA.rumahMilik) + ' (analogi rumah milik)', 1)}
 
-<div class="pkn">Catatan: jumlah kelompok umur (${angka(umurJumlah)}) berbeda ${angka(umurJumlah - KOTA.penduduk)} dari total penduduk karena berasal dari sumber berbeda &mdash; ditampilkan apa adanya. Luas darat + laut (${km2(KOTA.luasDarat + KOTA.luasLaut)}) tidak sama dengan luas total resmi (${km2(KOTA.luasTotal)}), selisih ${km2(selisihLuas())}; angka resmi dipakai untuk total. Angka ${angka(KOTA.gedungDiperiksa)} gedung adalah jumlah yang diperiksa dalam audit, bukan total gedung Jakarta. Peta game hanya ${luas.toFixed(2).replace('.', ',')} km&sup2; (${persen(porsiPeta(), 2)} daratan Jakarta), jadi kepadatan penduduk asli tidak diterapkan ke dunia game. Porsi bus &amp; truk di lalu lintas game dinaikkan ke minimal 1 unit agar ikon kota tetap muncul.</div>`;
+<div class="pkn">Catatan: jumlah kelompok umur (${angka(umurJumlah)}) berbeda ${angka(umurJumlah - KOTA.penduduk)} dari total penduduk karena berasal dari sumber berbeda &mdash; ditampilkan apa adanya. Luas darat + laut (${km2(KOTA.luasDarat + KOTA.luasLaut)}) tidak sama dengan luas total resmi (${km2(KOTA.luasTotal)}), selisih ${km2(selisihLuas())}; angka resmi dipakai untuk total. Angka ${angka(KOTA.gedungDiperiksa)} gedung adalah jumlah yang diperiksa dalam audit, bukan total gedung Jakarta. Dunia game ${luas.toFixed(2).replace('.', ',')} km&sup2; (${persen(porsiPeta(), 2)} daratan Jakarta) berisi ${angka(pendudukPeta())} jiwa dan ${angka(kendaraanPeta())} kendaraan versi data; layar hanya menampilkan 1:${SKALA} darinya (${JUMLAH_NPC} orang, ${MAX_LALULINTAS} kendaraan). Tower apartemen = ${angka(KOTA.apartemen)} unit &divide; ${UNIT_PER_MENARA} unit/menara (asumsi) &divide; ${angka(KOTA.gedungDiperiksa)} gedung audit. Porsi bus &amp; truk di lalu lintas game dinaikkan ke minimal 1 unit agar ikon kota tetap muncul.</div>`;
 }

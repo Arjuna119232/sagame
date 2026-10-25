@@ -24,6 +24,11 @@
    "id": "ped_p1",
    "url": "assets/models/characters/ped_p1.glb",
    "scale": 1
+  },
+  {
+   "id": "ped_a1",
+   "url": "assets/models/characters/ped_a1.glb",
+   "scale": 1
   }
  ],
  "vehicles": [
@@ -132,6 +137,11 @@
   {
    "id": "dufan_bianglala",
    "url": "assets/models/buildings/dufan_bianglala.glb",
+   "scale": 1
+  },
+  {
+   "id": "apartemen_1",
+   "url": "assets/models/buildings/apartemen_1.glb",
    "scale": 1
   }
  ],
