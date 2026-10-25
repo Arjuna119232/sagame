@@ -191,8 +191,9 @@ async function startServer() {
       for (const k of rule.clips) if (!r.clips.some((c) => c.toLowerCase().includes(k))) errs.push(`klip '${k}' tidak ada`);
     }
     if (def.cat === 'vehicles') {
+      const need = /motor/i.test(def.id) ? 2 : rule.wheels;   // sepeda motor: 2 roda
       const wheels = r.nodes.filter((n) => /wheel|roda|tire/i.test(n));
-      if (wheels.length < rule.wheels) errs.push(`node roda hanya ${wheels.length}`);
+      if (wheels.length < need) errs.push(`node roda hanya ${wheels.length} (butuh ${need})`);
     }
     if (def.id === 'dufan_bianglala' && !r.nodes.some((n) => /wheel|roda|bianglala|rotor/i.test(n))) {
       errs.push('node pemutar bianglala tidak ada');

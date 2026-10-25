@@ -34,7 +34,7 @@ window.runSelfTest = async () => {
   const ids = [];
   for (const cat of Object.keys(man)) for (const it of man[cat]) ids.push(it.id);
 
-  ok('manifest termuat', ids.length === 27, `${ids.length} aset`);
+  ok('manifest termuat', ids.length === 29, `${ids.length} aset`);
   ok('tidak ada aset hilang', al.missing.length === 0, al.missing.join(', ') || 'lengkap');
 
   const scene = new THREE.Scene();
@@ -77,6 +77,11 @@ window.runSelfTest = async () => {
   }
   const busG = sb.loadAsset('bus_transjakarta', [0, 0, 0]);
   ok('bus punya 4 roda', (busG.userData.wh || []).length === 4, `${(busG.userData.wh || []).length} node`);
+  const moG = sb.loadAsset('motor_1', [0, 0, 0]);
+  ok('motor punya 2 roda', (moG.userData.wh || []).length === 2, `${(moG.userData.wh || []).length} node`);
+  const trG = sb.loadAsset('truk_1', [0, 0, 0]);
+  ok('truk punya 4 roda', (trG.userData.wh || []).length === 4, `${(trG.userData.wh || []).length} node`);
+  ok('motor lebih kecil dari mobil', moG.userData.size.z < carG.userData.size.z, `${moG.userData.size.z.toFixed(2)} m`);
 
   // 4. bianglala: node pemutar ditemukan main.js lewat regex nama
   const fg = sb.loadAsset('dufan_bianglala', [0, 0, 0]);

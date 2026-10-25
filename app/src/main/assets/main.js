@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AssetLoader } from './AssetLoader.js';
 import { SceneBuilder } from './SceneBuilder.js';
 import { setupRenderer, setupLights, loadEnv, setDay } from './MaterialSetup.js';
+import { MAX_LALULINTAS, rencanaLaluLintas, profilKotaHtml } from './KotaData.js';
 
 const $=id=>document.getElementById(id);
 let mode='splash',cur='',prevScr='menu',ld=false,vp=false,ST={g:1,f:1,t:1,s:1,m:1},STAT={best:0,time:0,hits:0};
@@ -16,8 +17,9 @@ const SD=[['GRAFIS','g',['HEMAT','TINGGI']],['JARAK PANDANG','f',['DEKAT','SEDAN
 function openSet(f){prevScr=f;show('sett');renderSet()}
 function renderSet(){$('sl').innerHTML=SD.map((r,i)=>'<div class="mi row" onclick="chg('+i+')"><span>'+r[0]+'</span><b>'+r[2][ST[r[1]]]+'</b></div>').join('')}
 function chg(i){const r=SD[i];ST[r[1]]=(ST[r[1]]+1)%r[2].length;svS();renderSet();window.AP&&AP()}
+function showProfil(){$('pft').innerHTML=profilKotaHtml();show('profil')}
 function showStats(){$('stt').innerHTML='SKOR TERTINGGI: '+STAT.best+'<br>WAKTU MAIN: '+(STAT.time/60|0)+' MENIT<br>TABRAKAN PEJALAN KAKI: '+STAT.hits;show('stats')}
-function bk(){if(mode=='play')pauseGame();else if(cur=='pause')resumeGame();else if(cur=='sett')show(prevScr);else if(cur=='brief'||cur=='stats')show('menu');else if(cur=='menu'&&window.Android)Android.quit()}
+function bk(){if(mode=='play')pauseGame();else if(cur=='pause')resumeGame();else if(cur=='sett')show(prevScr);else if(cur=='brief'||cur=='stats'||cur=='profil')show('menu');else if(cur=='menu'&&window.Android)Android.quit()}
 const TIPS=['Dekati mobil lalu tekan MASUK untuk mengemudi.','Tahan LARI/REM saat menyetir untuk mengerem.','Di Jakarta kendaraan lewat di lajur kiri.','Makin banyak bintang, makin cepat polisi mengejar.','Monas ada di pusat kota, titik awal permainanmu.','Geser layar (sisi kanan) untuk melihat kiri/kanan.','Pohon, tiang, dan kendaraan itu padat. Jangan menabrak.'];
 function setBar(p){$('barf').style.width=p+'%';$('pct').textContent='Memuat dunia Jakarta... '+Math.min(100,p|0)+'%'}
 function skyline(){const c=$('sk'),x=c.getContext('2d');c.width=480;c.height=270;const g=x.createLinearGradient(0,0,0,270);g.addColorStop(0,'#2b1b4a');g.addColorStop(.6,'#e8693a');g.addColorStop(1,'#ffb35a');x.fillStyle=g;x.fillRect(0,0,480,270);x.fillStyle='#120c1c';for(let i=0;i<60;i++){const w=10+Math.random()*18,h=30+Math.random()*(i>20&&i<40?110:55);x.fillRect(i*8-10,270-h,w,h)}x.fillRect(236,70,8,200);x.beginPath();x.arc(240,66,6,0,6.3);x.fillStyle='#ffc830';x.fill()}
@@ -76,7 +78,9 @@ const P=SB.loadAsset('player',[0,0,-9]);SB.play(P,'idle');
 const car=dims(SB.loadAsset('mobil_player',[9,0,-12]),[1.1,2.3]);
 const spot=new THREE.SpotLight(0xfff2cc,0,70,.5,.5),stg=new THREE.Object3D();spot.position.set(0,1,2);stg.position.set(0,0,20);car.add(spot,stg);spot.target=stg;
 const TR=[],PO=[],PD=[];
-for(let k=0;k<12;k++){const id=k<2?'bus_transjakarta':k<5?'taksi_bluebird':k<7?'bajaj':pk(['mobil_umum_1','mobil_umum_2']),g=dims(SB.loadAsset(id),k<2?[1.3,4.9]:(k>=5&&k<7)?[.85,1.5]:[1.1,2.3]),u=g.userData;u.rad=u.hl+1.2;u.ver=k%2==0;u.line=20+40*(((Math.random()*10)|0)-5);u.dir=Math.random()<.5?1:-1;u.p=(Math.random()-.5)*400;u.cd=0;TR.push(g)}
+// komposisi mengikuti data Jakarta: 76% motor, 19% mobil, 4% truk, <1% bus (lihat KotaData.js)
+const SPR={bus_transjakarta:[1.3,4.9],bajaj:[.85,1.5],motor_1:[.4,1.0],truk_1:[1.2,3.3],def:[1.1,2.3]};
+rencanaLaluLintas(MAX_LALULINTAS).forEach((id,k)=>{const g=dims(SB.loadAsset(id),SPR[id]||SPR.def),u=g.userData;u.rad=u.hl+1.2;u.ver=k%2==0;u.line=20+40*(((Math.random()*10)|0)-5);u.dir=Math.random()<.5?1:-1;u.p=(Math.random()-.5)*400;u.cd=0;TR.push(g)});
 for(let k=0;k<3;k++){const g=dims(SB.loadAsset('mobil_polisi'),[1.1,2.3]);g.visible=false;g.userData.on=false;g.userData.li=[0xff2222,0x2266ff].map((c,n)=>{const l=new THREE.PointLight(c,0,18,2);l.position.set(n?.5:-.5,2,0);g.add(l);return l});PO.push(g)}
 function spawn(m){let x,z;do{x=(Math.random()-.5)*400;z=(Math.random()-.5)*400}while(hit(x,z,1));m.position.set(x,0,z);m.visible=true;m.userData.dead=0}
 for(let k=0;k<(Q>1?24:14);k++){const m=SB.loadAsset(k%4==1?'ped_h1':k%7==3?'ped_p1':pk(['ped_m1','ped_m2'])),u=m.userData;u.a=0;u.t=0;u.dead=0;u.ph=Math.random()*6;SB.play(m,'walk');spawn(m);PD.push(m)}
@@ -94,6 +98,13 @@ A.addEventListener('touchstart',e=>{e.preventDefault();
 addEventListener('resize',()=>{R.setSize(innerWidth,innerHeight);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()});
 // siang-malam
 const cD=new THREE.Color(0x9fd0f0),cN=new THREE.Color(0x070b1a),cK=new THREE.Color(0xff8a50),zD=new THREE.Color(0x3f86d6),zN=new THREE.Color(0x02040c),tmp=new THREE.Color(),zen=new THREE.Color();let nf=0;
+// Jam dinding WIB (UTC+7, tanpa DST) dalam format 24 jam, mis. "17:19".
+// Dipakai HUD supaya tidak menampilkan jam UTC/game yang mengaku "WIB".
+function jamWIB(t = Date.now()) {
+  const d = new Date(t + 7 * 3600 * 1000);
+  return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+}
+
 function sky(dt,T){tod=(tod+dt/300)%1;const th=(tod-.25)*6.2832,cs=Math.cos(th),sn=Math.sin(th),dayF=Math.max(0,Math.min(1,sn*3+.5)),dusk=Math.max(0,1-Math.abs(sn)*4);nf=1-dayF;
   tmp.copy(cN).lerp(cD,dayF).lerp(cK,dusk*.55);S.fog.color.copy(tmp);zen.copy(zN).lerp(zD,dayF).lerp(cK,dusk*.25);
   skyT-=dt;if(skyT<=0){skyT=.25;document.body.style.background='linear-gradient(#'+zen.getHexString()+',#'+tmp.getHexString()+' 58%)'}
@@ -143,7 +154,7 @@ function tick(t){
   C.fov+=(65+Math.min(18,Math.abs(v)*.7)-C.fov)*Math.min(1,4*dt);C.updateProjectionMatrix();
   sky(dt,T);
   $('hit').style.display=inCar?'none':'flex';$('score').textContent=score;$('stars').textContent='\u2605'.repeat(Math.floor(heat))+'\u2606'.repeat(3-Math.floor(heat));
-  const bi=Math.round(T.position.x/40),bj=Math.round(T.position.z/40),hr=tod*24;$('dist').textContent=dist(bi,bj)+' \u2022 '+String(hr|0).padStart(2,'0')+':'+String((hr%1)*60|0).padStart(2,'0')+' WIB';
+  const bi=Math.round(T.position.x/40),bj=Math.round(T.position.z/40);$('dist').textContent=dist(bi,bj)+' \u2022 '+jamWIB()+' WIB';
   $('spd').textContent=Math.abs(inCar?v:sp)*3.6|0;$('msg').style.display=msgT>0?'block':'none';$('msg').textContent=msg;
   const h=T.rotation.y,co=Math.cos(h),si=Math.sin(h),s=.5,px=T.position.x,pz=T.position.z;
   X.setTransform(1,0,0,1,0,0);X.clearRect(0,0,120,120);
@@ -161,7 +172,7 @@ document.addEventListener('touchstart',e=>{if(mode!='play'||lt!==null)return;for
 document.addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(t.identifier!==lt)continue;e.preventDefault();cy-=(t.clientX-lx)*.006;pitch=Math.max(.05,Math.min(1.2,pitch+(t.clientY-ly)*.004));lx=t.clientX;ly=t.clientY;lookT=1.5}},{passive:false});
 const le=e=>{for(const t of e.changedTouches)if(t.identifier===lt)lt=null};document.addEventListener('touchend',le);document.addEventListener('touchcancel',le);
 $('hit').addEventListener('touchstart',e=>{e.preventDefault();if(!inCar&&mode=='play'&&pT<=0){punch=true;pT=.3}});
-window.AP=()=>{const hi=ST.g>0;R.setPixelRatio(hi?Math.min(devicePixelRatio,2):1);R.setSize(innerWidth,innerHeight);R.shadowMap.enabled=hi;sun.castShadow=hi;S.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>m.needsUpdate=true)});S.fog.far=[130,240,340][ST.f];S.fog.near=S.fog.far*.3;TR.forEach((g,k)=>g.visible=k<[4,8,12][ST.t]);mm.style.display=ST.m?'':'none'};
+window.AP=()=>{const hi=ST.g>0;R.setPixelRatio(hi?Math.min(devicePixelRatio,2):1);R.setSize(innerWidth,innerHeight);R.shadowMap.enabled=hi;sun.castShadow=hi;S.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>m.needsUpdate=true)});S.fog.far=[130,240,340][ST.f];S.fog.near=S.fog.far*.3;TR.forEach((g,k)=>g.visible=k<[12,18,MAX_LALULINTAS][ST.t]);mm.style.display=ST.m?'':'none'};
 AP();requestAnimationFrame(tick);
 }
 
@@ -169,4 +180,4 @@ const vd=$('vid');vd.onplaying=()=>{vp=true;vd.style.display='block';$('sp').sty
 if(vd.play)try{vd.play().catch(()=>{})}catch(e){}
 setTimeout(()=>{if(!vp)toLoad()},5800);show('splash');
 
-Object.assign(window,{show,startPlay,pauseGame,resumeGame,toMenu,openSet,chg,showStats,bk,back,toLoad});
+Object.assign(window,{show,startPlay,pauseGame,resumeGame,toMenu,openSet,chg,showStats,showProfil,bk,back,toLoad});

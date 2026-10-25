@@ -3,6 +3,7 @@
 // Conventions from README: meters, origin at bottom centre, facing +Z, PBR materials.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { KOTA } from '../../app/src/main/assets/KotaData.js';
 
 /* ------------------------------------------------------------------ materials */
 
@@ -79,7 +80,8 @@ function windowTexture(wall = 0xd6d9dd, lit = 0xffd98a, seed = 1) {
       b.fillRect(x, y, ww, wh);
       b.fillStyle = 'rgba(150,185,220,0.45)';
       b.fillRect(x, y, ww, 4);
-      if (rnd() < 0.42) {
+      // porsi jendela menyala mengikuti kepemilikan rumah (54,54%) sebagai analogi
+      if (rnd() < KOTA.rumahMilik) {
         e.fillStyle = rnd() < 0.7 ? '#ffd98a' : '#bfe3ff';
         e.fillRect(x, y, ww, wh);
       }
@@ -387,6 +389,74 @@ function bajaj() {
   return { root: g };
 }
 
+function motor() {
+  const g = new THREE.Group();
+  const bodyM = std(0xd8261f, { r: 0.45, m: 0.35 });
+  const frameM = std(0x2a2f36, { r: 0.55, m: 0.5 });
+  const R = 0.3;
+
+  const wheel = (name, z) => {
+    const grp = new THREE.Group();
+    grp.name = name;
+    grp.position.set(0, R, z);
+    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.1, 14).rotateZ(Math.PI / 2), RUBBER()));
+    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.11, 10).rotateZ(Math.PI / 2), METAL(0xcfd3d7)));
+    return grp;
+  };
+  g.add(wheel('wheel_depan', 0.62), wheel('wheel_belakang', -0.6));
+
+  g.add(mesh(new THREE.BoxGeometry(0.14, 0.12, 0.95), frameM, 0, 0.52, 0));      // rangka
+  g.add(mesh(new THREE.BoxGeometry(0.26, 0.3, 0.3), frameM, 0, 0.44, 0.02));      // mesin
+  g.add(mesh(new THREE.BoxGeometry(0.3, 0.22, 0.42), bodyM, 0, 0.7, 0.12));       // tangki
+  g.add(mesh(new THREE.BoxGeometry(0.3, 0.12, 0.55), std(0x14161a, { r: 0.85 }), 0, 0.76, -0.26)); // jok
+  g.add(mesh(new THREE.BoxGeometry(0.24, 0.08, 0.26), frameM, 0, 0.79, -0.6));    // bagasi
+
+  for (const x of [-0.09, 0.09]) {                                               // garpu depan
+    const f = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.6, 6), METAL(0xb8bcc0), x, 0.62, 0.56);
+    f.rotation.x = -0.3;
+    g.add(f);
+  }
+  g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.66, 6).rotateZ(Math.PI / 2), frameM, 0, 0.94, 0.5)); // stang
+  g.add(mesh(new THREE.SphereGeometry(0.09, 10, 8), std(0xfff6d8, { r: 0.25, e: 0xfff2cc, ei: 1.4 }), 0, 0.86, 0.64));
+  g.add(mesh(new THREE.BoxGeometry(0.34, 0.1, 0.42), std(0x14161a, { r: 0.7 }), 0, 0.42, -0.5)); // knalpot
+
+  // pengendara sederhana (duduk)
+  const shirt = std(0x2b6cb0, { r: 0.85 });
+  g.add(mesh(new THREE.BoxGeometry(0.3, 0.18, 0.28), std(0x1f2430, { r: 0.9 }), 0, 0.86, -0.05));
+  const torso = mesh(new THREE.BoxGeometry(0.34, 0.44, 0.24), shirt, 0, 1.12, -0.02);
+  torso.rotation.x = 0.14;
+  g.add(torso);
+  g.add(mesh(new THREE.SphereGeometry(0.115, 12, 10), SKIN(0xb98558), 0, 1.42, 0.04));
+  g.add(mesh(new THREE.SphereGeometry(0.12, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), std(0x1b1b1b, { r: 0.6 }), 0, 1.45, 0.04));
+  for (const s of [-1, 1]) {
+    const arm = mesh(new THREE.BoxGeometry(0.075, 0.34, 0.08), shirt, s * 0.19, 1.12, 0.2);
+    arm.rotation.x = 0.9;
+    g.add(arm);
+    g.add(mesh(new THREE.BoxGeometry(0.09, 0.3, 0.12), std(0x1f2430, { r: 0.9 }), s * 0.17, 0.86, 0.12));
+  }
+  g.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+  return { root: g };
+}
+
+function truck() {
+  const g = new THREE.Group();
+  const boxM = std(0xe8e4da, { r: 0.82 });
+  const cabM = std(0x2f5fa8, { r: 0.5, m: 0.3 });
+  g.add(mesh(new THREE.BoxGeometry(2.0, 0.3, 6.2), std(0x33383f, { r: 0.85 }), 0, 0.62, 0));   // sasis
+  g.add(mesh(new THREE.BoxGeometry(2.15, 1.5, 1.7), cabM, 0, 1.5, 2.2));                          // kabin
+  g.add(mesh(new THREE.BoxGeometry(2.05, 0.62, 0.08), GLASS(), 0, 1.85, 3.06));                   // kaca depan
+  for (const x of [-1.06, 1.06]) g.add(mesh(new THREE.BoxGeometry(0.08, 0.6, 1.2), GLASS(), x, 1.85, 2.2));
+  g.add(mesh(new THREE.BoxGeometry(2.24, 2.2, 3.9), boxM, 0, 1.85, -0.9));                        // boks
+  g.add(mesh(new THREE.BoxGeometry(2.26, 0.12, 3.92), std(0xb9b4a8, { r: 0.8 }), 0, 2.98, -0.9)); // atap boks
+  for (const x of [-0.75, 0.75]) {
+    g.add(mesh(new THREE.BoxGeometry(0.4, 0.2, 0.08), std(0xfff6d8, { r: 0.2, e: 0xfff2cc, ei: 1.2 }), x, 0.95, 3.06));
+    g.add(mesh(new THREE.BoxGeometry(0.34, 0.18, 0.08), std(0xaa1111, { r: 0.3, e: 0xaa1111, ei: 0.8 }), x, 0.95, -2.86));
+  }
+  wheels([[-1.02, 2.2, 0.48, 0.28], [1.02, 2.2, 0.48, 0.28],
+          [-1.02, -1.5, 0.48, 0.28], [1.02, -1.5, 0.48, 0.28]]).forEach((w) => g.add(w));
+  return { root: g };
+}
+
 /* ------------------------------------------------------------------ characters */
 
 const q = (e) => new THREE.Quaternion().setFromEuler(new THREE.Euler(e[0], e[1], e[2], 'XYZ'));
@@ -596,6 +666,8 @@ export const REGISTRY = {
   'assets/models/vehicles/bus_transjakarta.glb': () => bus(),
   'assets/models/vehicles/bajaj.glb': () => bajaj(),
   'assets/models/vehicles/mobil_polisi.glb': () => car({ body: 0xf2f2f2, police: true }),
+  'assets/models/vehicles/motor_1.glb': () => motor(),
+  'assets/models/vehicles/truk_1.glb': () => truck(),
 
   'assets/models/buildings/gedung_pencakar_1.glb': () => office({ w: 16, d: 16, h: 42, wall: 0xd6d9dd, seed: 11 }),
   'assets/models/buildings/gedung_pencakar_2.glb': () => office({ w: 13, d: 15, h: 58, wall: 0xc7d3dd, seed: 23 }),

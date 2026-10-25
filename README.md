@@ -9,10 +9,11 @@ landscape) dengan package `com.karta.sagame`.
   agar ES module dan `fetch()` aset `.glb` berjalan (bukan `file://`)
 - Jembatan JS → native: `window.Android.quit()`
 
-> **Status v0.5:** seluruh 27 aset `.glb` (5 karakter, 7 kendaraan, 12 gedung,
+> **Status v0.6:** seluruh 29 aset `.glb` (5 karakter, 9 kendaraan, 12 gedung,
 > 3 properti) **sudah ada di repo** dan dimuat tanpa `MISSING ASSET`. Model dibuat
 > secara programatik lewat `tools/glb/` sehingga bisa dibangun ulang kapan saja —
-> lihat [Regenerasi aset](#regenerasi-aset).
+> lihat [Regenerasi aset](#regenerasi-aset). Sejak v0.6 angka kota (penduduk, luas,
+> kendaraan) menjadi parameter game yang nyata — lihat [Data kota](#data-kota-v06).
 
 ## Struktur
 
@@ -22,12 +23,13 @@ app/src/main/
 ├── assets/
 │   ├── index.html                      # shell UI: splash, menu, HUD
 │   ├── main.js                         # game loop, kota, input, misi
+│   ├── KotaData.js                     # sumber tunggal angka kota + layar PROFIL KOTA
 │   ├── AssetLoader.js                  # muat manifest + GLB (graceful bila hilang)
 │   ├── SceneBuilder.js                 # clone/instance GLB, animasi, wheel nodes
 │   ├── MaterialSetup.js                # renderer PBR, lighting, HDR env, siang-malam
 │   ├── intro.mp4                       # video splash (tools/make_intro.py)
 │   ├── assets/
-│   │   ├── manifest.json               # daftar 27 aset + url/scale/yaw
+│   │   ├── manifest.json               # daftar 29 aset + url/scale/yaw
 │   │   ├── env/sky.hdr                 # HDRI gradasi (tools/make_sky.py)
 │   │   └── models/{characters,buildings,vehicles,props}/*.glb
 │   └── vendor/three/                   # three.js r160 (diunduh CI, gitignore)
@@ -36,7 +38,7 @@ app/src/main/
 
 tools/make_intro.py                     # generator video splash (Pillow + ffmpeg)
 tools/make_sky.py                       # generator HDRI langit (Radiance .hdr)
-tools/glb/factory.js                    # resep 27 model: gedung, kendaraan, karakter, props
+tools/glb/factory.js                    # resep 29 model: gedung, kendaraan, karakter, props
 tools/glb/build-assets.js               # ekspor + validasi GLB (Chromium headless)
 tools/glb/selftest.js                   # uji integrasi pakai modul game asli
 tools/glb/preview.html                  # grid pratinjau semua model di browser
@@ -77,7 +79,7 @@ npm i playwright-core && npx playwright install chromium
 # bila Chromium tidak terdeteksi otomatis:
 # export CHROME_PATH=/path/ke/chrome
 
-# tulis ulang ke-27 GLB + validasi kontrak (ukuran, origin, klip, roda, emissive)
+# tulis ulang ke-29 GLB + validasi kontrak (ukuran, origin, klip, roda, emissive)
 bun tools/glb/build-assets.js
 
 # hanya memeriksa GLB yang sudah ada (tanpa menulis)
@@ -98,7 +100,7 @@ menyaring kategori.
 ### ID yang dipakai game
 
 `characters`: player, ped_m1, ped_m2, ped_h1, ped_p1 ·
-`vehicles`: mobil_player, mobil_umum_1, mobil_umum_2, taksi_bluebird, bus_transjakarta, bajaj, mobil_polisi ·
+`vehicles`: mobil_player, mobil_umum_1, mobil_umum_2, taksi_bluebird, bus_transjakarta, bajaj, mobil_polisi, motor_1, truk_1 ·
 `buildings`: gedung_pencakar_1/2, ruko_1/2, rumah_menteng_1, gedung_kolonial_1, gedung_umum_1/2, monas, bundaran_hi, stadion_gbk, dufan_bianglala ·
 `props`: pohon_1, tiang_lampu, bendera
 
@@ -113,6 +115,50 @@ scene terbakar putih.
 Model dibuat sendiri (bukan aset pihak ketiga), jadi tidak ada urusan lisensi.
 Untuk mengganti dengan model CC0: Kenney.nl, Quaternius, Poly Pizza, Sketchfab
 (cek lisensi).
+
+## Data kota (v0.6)
+
+Semua angka kota ada di satu berkas: `app/src/main/assets/KotaData.js`. Tidak ada angka
+kota yang ditulis ulang di `main.js` atau `index.html`; turunan (rasio, kepadatan,
+komposisi lalu lintas) dihitung dari berkas itu.
+
+| Data | Nilai di `KOTA` | Dipakai jadi apa di game |
+|---|---|---|
+| Penduduk 10.680.000 (L 5.361.000 / P 5.317.000) | `penduduk`, `pendudukLaki`, `pendudukPerempuan` | baris layar PROFIL KOTA |
+| Kelompok umur 0-9 / 10-19 / 20-64 / 65+ | `umur[]` | baris layar PROFIL KOTA |
+| Luas darat 661,53 km², laut 6.977,5 km², total 7.639,83 km² | `luasDarat`, `luasLaut`, `luasTotal` | baris luas + dasar kepadatan |
+| Kepadatan ±16.144 jiwa/km² | **turunan**: `penduduk / luasDarat` | baris luas |
+| Kendaraan 12.279.058: motor 9.376.276, mobil 2.336.960, truk 527.841, bus 37.981 | `kendaraan` | **komposisi lalu lintas** (motor 76,4% · mobil 19,0% · truk 4,3% · bus 0,3%) |
+| Rumah milik sendiri 54,54% | `rumahMilik` | peluang jendela menyala malam (dipakai `tools/glb/factory.js`) |
+| Apartemen ±46.000, gedung audit ±3.500 | `apartemen`, `gedungDiperiksa` | baris layar PROFIL KOTA |
+
+Cara kerja lalu lintas: 28 kendaraan di-spawn sekali saat dunia dibangun
+(`MAX_LALULINTAS`), jumlah yang **tampil** diatur pengaturan LALU LINTAS
+(12 / 18 / 28) lewat `visible`. Komposisinya dihitung `bagiKendaraan()` dengan metode
+sisa terbesar dari rasio nyata, lalu `rencanaLaluLintas()` memecahnya jadi id GLB:
+motor → `motor_1`, mobil → campuran `mobil_umum_1/2`, `taksi_bluebird`, `bajaj`
+(bobot 45/30/15/10), truk → `truk_1`, bus → `bus_transjakarta`.
+
+Penyimpangan yang disengaja (dan ditulis di panel):
+
+- **Bus & truk dapat kuota minimum 1** saat n ≥ 12. Porsi aslinya 0,3% dan 4,3%,
+  sehingga tanpa kuota bus tidak pernah muncul (ikon TransJakarta hilang).
+- **Jendela menyala 54,54%** adalah analogi dari angka rumah milik sendiri, bukan
+  data pemakaian listrik.
+- **Kepadatan tidak diterapkan ke dunia game.** Peta hanya 440x440 m ≈ 0,19 km²
+  (≈ 0,03% daratan Jakarta), jadi menerapkan 16.144 jiwa/km² akan berarti ~3.100
+  NPC di satu layar. Dunia tetap 110 bangunan seperti v0.5.
+
+Ketidakcocokan di data sumber ditampilkan apa adanya, tidak "diperbaiki" di kode:
+
+- Jumlah kelompok umur 11.149.500 vs total penduduk 10.680.000 → selisih 469.500.
+- Darat + laut = 7.639,03 km² vs total resmi 7.639,83 km² → selisih 0,8 km².
+- "3.500 gedung" adalah **sampel audit**, bukan total gedung Jakarta.
+
+Layar **PROFIL KOTA** (menu utama) merender tabel di atas, termasuk catatan
+ketidakcocokan itu. Untuk mengubah data: sunting `KOTA`/`DUNIA` di `KotaData.js`,
+lalu `bun tools/glb/build-assets.js` bila perubahan menyentuh `rumahMilik`
+(peluang jendela menyala ikut berubah).
 
 ## Kontrol
 
@@ -185,17 +231,23 @@ ANDROID_HOME=/opt/android-sdk ./gradlew assembleDebug
 ## Rilis
 
 APK debug ditandatangani debug keystore dan diunggah sebagai asset GitHub Release
-(`v0.1`–`v0.5`). Untuk distribusi serius, buat keystore rilis sendiri dan
+(`v0.1`–`v0.6`). Untuk distribusi serius, buat keystore rilis sendiri dan
 konfigurasikan `signingConfigs` di `app/build.gradle`.
 
 ## Riwayat versi
 
+- **v0.6** — **data kota jadi parameter**: `KotaData.js` memuat penduduk, kelompok
+  umur, luas wilayah, dan jumlah kendaraan; komposisi lalu lintas mengikuti rasio
+  nyata (motor 76,4%), jendela malam mengikuti 54,54% rumah milik, dan menu baru
+  **PROFIL KOTA** menampilkan tabel + catatan ketidakcocokan data. Tambah 2 GLB
+  (`motor_1`, `truk_1`) → 29 aset. Jam HUD memakai **WIB asli format 24 jam**,
+  bukan lagi jam UTC yang diberi label WIB.
 - **v0.5** — **dunia terisi**: 27 aset `.glb` lengkap (low-poly PBR) + generator
   `tools/glb/`. Karakter punya 4 klip animasi, kendaraan punya node roda, bianglala
   berputar, jendela gedung menyala saat malam. `sky.hdr` diperbaiki (placeholder
   v0.4 punya radiance ~4,5x10^30 sehingga layar putih total).
 - **v0.4** — refactor ke pipeline **GLB/PBR**: three.js r160 ES module, `AssetLoader` /
-  `SceneBuilder` / `MaterialSetup`, HDR environment, `WebViewAssetLoader`, manifest 27 aset.
+  `SceneBuilder` / `MaterialSetup`, HDR environment, `WebViewAssetLoader`, manifest 29 aset.
   **Berkas `.glb` belum disertakan** → dunia kosong sampai aset diisi.
 - **v0.3** — mekanik pukul, kamera free-look, tabrakan kendaraan, NPC bervariasi.
 - **v0.2** — video splash `intro.mp4` + generator `tools/make_intro.py`.

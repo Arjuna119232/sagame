@@ -61,6 +61,16 @@
    "id": "mobil_polisi",
    "url": "assets/models/vehicles/mobil_polisi.glb",
    "scale": 1
+  },
+  {
+   "id": "motor_1",
+   "url": "assets/models/vehicles/motor_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "truk_1",
+   "url": "assets/models/vehicles/truk_1.glb",
+   "scale": 1
   }
  ],
  "buildings": [

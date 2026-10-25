@@ -18,6 +18,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b1020;touch-action:n
 
 .lb{position:fixed;transform:translate(-50%,-50%);display:none;pointer-events:none;z-index:2;font:700 12px Arial,sans-serif;color:#fff;background:#000a;padding:2px 8px;border-radius:8px;white-space:nowrap}
 .hud{visibility:hidden}body.play .hud{visibility:visible}
+#lbs{display:none}body.play #lbs{display:block}
 .scr{position:fixed;inset:0;z-index:9;display:none;flex-direction:column;justify-content:center;align-items:center;font-family:Impact,'Arial Black',sans-serif;color:#eee;text-shadow:2px 2px 0 #000,0 0 8px #000}
 .side{align-items:flex-start;padding-left:7vw;background:linear-gradient(90deg,#000d,#0007 55%,#0000)}
 #pause{background:#000a;z-index:12}
@@ -40,12 +41,21 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b1020;touch-action:n
 .mi{font-size:24px;letter-spacing:2px;padding:5px 0}.mi:active{color:#ffb12a}
 .row{display:flex;justify-content:space-between;width:min(520px,86vw)}.row b{color:#ffb12a;font-weight:400}
 .tx{font:15px/1.5 Arial,sans-serif;max-width:min(520px,86vw);text-shadow:1px 1px 2px #000;margin-bottom:12px}
+#profil{justify-content:flex-start;padding:3vh 0 3vh 7vw;overflow-y:auto;align-items:flex-start}
+#profil .mt{font-size:30px}
+.pkw{width:min(620px,88vw);margin-bottom:6px}
+.pk{display:flex;justify-content:space-between;gap:14px;font:13px/1.5 Arial,sans-serif;width:100%;border-bottom:1px solid #ffffff14;padding:1px 0}
+.pk b{color:#ffb12a;font-weight:400;text-align:right}
+.pk.sub{padding-left:14px;opacity:.85;font-size:12px}
+.pkh{font:700 12px Arial,sans-serif;letter-spacing:3px;color:#8fd0ff;margin:10px 0 2px;width:100%}
+.pkn{font:12px/1.45 Arial,sans-serif;opacity:.72;width:min(620px,88vw);margin-top:10px;text-shadow:1px 1px 2px #000}
 </style></head><body>
 <div class="scr" id="splash" onclick="toLoad()"><video id="vid" src="intro.mp4" muted playsinline autoplay></video><div id="sp"><div class="a s1">0xmahen</div><div class="a s2">PRESENTS</div><div class="c3">PREMAN<br>GANG SEMPIT</div></div></div>
 <div class="scr" id="load"><canvas id="sk"></canvas><div class="lt">PREMAN GANG SEMPIT</div><div class="by" style="margin:2px 0 0">by 0xmahen</div><div id="tip"></div><div id="bar"><i id="barf"></i></div><div id="pct">Memuat...</div></div>
-<div class="scr side" id="menu"><div class="mt">PREMAN<br>GANG SEMPIT</div><div class="by">by 0xmahen</div><div class="mi" onclick="startPlay()">MULAI GAME</div><div class="mi" onclick="show('brief')">BRIEF</div><div class="mi" onclick="showStats()">STATISTIK</div><div class="mi" onclick="openSet('menu')">PENGATURAN</div><div class="mi" onclick="window.Android&&Android.quit()">KELUAR</div></div>
+<div class="scr side" id="menu"><div class="mt">PREMAN<br>GANG SEMPIT</div><div class="by">by 0xmahen</div><div class="mi" onclick="startPlay()">MULAI GAME</div><div class="mi" onclick="show('brief')">BRIEF</div><div class="mi" onclick="showStats()">STATISTIK</div><div class="mi" onclick="showProfil()">PROFIL KOTA</div><div class="mi" onclick="openSet('menu')">PENGATURAN</div><div class="mi" onclick="window.Android&&Android.quit()">KELUAR</div></div>
 <div class="scr side" id="brief"><div class="mt">BRIEF</div><div class="by">JAKARTA</div><div class="tx">Kamu preman gang sempit di Jakarta. Kota ini luas, dari Monas sampai Blok M. Kuasai jalanan, tapi makin besar kekacauanmu, makin dekat polisi mengejar. Kabur sejauh mungkin sebelum tertangkap.</div><div class="mi" onclick="show('menu')">KEMBALI</div></div>
 <div class="scr side" id="stats"><div class="mt">STATISTIK</div><div class="by">&nbsp;</div><div class="tx" id="stt"></div><div class="mi" onclick="show('menu')">KEMBALI</div></div>
+<div class="scr side" id="profil"><div class="mt">PROFIL KOTA</div><div class="by">JAKARTA</div><div class="pkw"><div id="pft"></div></div><div class="mi" onclick="show('menu')">KEMBALI</div></div>
 <div class="scr side" id="sett"><div class="mt">PENGATURAN</div><div class="by">&nbsp;</div><div id="sl"></div><div class="mi" onclick="back()">KEMBALI</div></div>
 <div class="scr side" id="pause"><div class="mt">JEDA</div><div class="by">&nbsp;</div><div class="mi" onclick="resumeGame()">LANJUT</div><div class="mi" onclick="openSet('pause')">PENGATURAN</div><div class="mi" onclick="toMenu()">MENU UTAMA</div></div>
 <div id="vig"></div><div id="lbs"></div>
