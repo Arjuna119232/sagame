@@ -97,8 +97,11 @@ if(SB.loadInstanced('tiang_lampu',lampL))lampL.forEach(l=>CI.push([l.x,l.z,.35])
 if(SB.loadInstanced('pohon_1',treeL))treeL.forEach(t=>CI.push([t.x,t.z,.5]));
 // ---- karakter & kendaraan (GLB)
 const dims=(g,d)=>{const s=g.userData.size;g.userData.hw=s.x>0?s.x/2:d[0];g.userData.hl=s.z>0?s.z/2:d[1];return g};
-const P=SB.loadAsset('player',[0,0,-14]);  // di luar radius Monas, kalau tidak pemain terkunciSB.play(P,'idle');
-const car=dims(SB.loadAsset('mobil_player',[9,0,-12]),[1.1,2.3]);
+const RUMAH_PONCOL=[72,0,108];
+SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);
+lab('PONCOL JAYA',RUMAH_PONCOL[0],14,RUMAH_PONCOL[2]);
+const P=SB.loadAsset('player',RUMAH_PONCOL);  // awal di rumah, Poncol JayaSB.play(P,'idle');
+const car=dims(SB.loadAsset('mobil_player',[RUMAH_PONCOL[0]+6,0,RUMAH_PONCOL[2]]),[1.1,2.3]);
 const spot=new THREE.SpotLight(0xfff2cc,0,70,.5,.5),stg=new THREE.Object3D();spot.position.set(0,1,2);stg.position.set(0,0,20);car.add(spot,stg);spot.target=stg;
 const TR=[],PO=[],PD=[];
 // komposisi mengikuti data Jakarta: 76% motor, 19% mobil, 4% truk, <1% bus (lihat KotaData.js)
@@ -171,7 +174,7 @@ function tick(t){
     const dx=T.position.x-g.position.x,dz=T.position.z-g.position.z,d=Math.hypot(dx,dz);near=Math.min(near,d);
     g.rotation.y=Math.atan2(dx,dz);slide(g,9+stn*3,dt,2);g.userData.wh.forEach(w=>w.rotation.x+=10*dt);
     const fl=Math.floor(tm*6)%2==0;g.userData.li[0].intensity=fl?40:0;g.userData.li[1].intensity=fl?0:40;
-    if(d<3&&Math.abs(inCar?v:0)<4){heat=0;score=Math.max(0,score-50);inCar=false;v=0;P.visible=true;P.position.set(0,0,-9);car.position.set(9,0,-12);car.rotation.y=0;A.textContent='MASUK';msg='TERTANGKAP! -50';msgT=3;SFX.play('caught');SFX.stopEngine()}});
+    if(d<3&&Math.abs(inCar?v:0)<4){heat=0;score=Math.max(0,score-50);inCar=false;v=0;P.visible=true;P.position.set(RUMAH_PONCOL[0],0,RUMAH_PONCOL[2]-3);car.position.set(RUMAH_PONCOL[0]+6,0,RUMAH_PONCOL[2]);car.rotation.y=0;A.textContent='MASUK';msg='TERTANGKAP! -50';msgT=3;SFX.play('caught');SFX.stopEngine()}});
   heat=Math.max(0,heat-dt*(near>70?.25:.04));msgT-=dt;if(crashT>0)crashT-=dt;
   // ambient traffic/city sounds
   if(mode=='play'){trafT-=dt;if(trafT<=0){SFX.trafficPass();trafT=3+Math.random()*5}cityT-=dt;if(cityT<=0){SFX.cityWind();cityT=8+Math.random()*6}npcStepT-=dt;if(npcStepT<=0){SFX.npcStep();npcStepT=1.5+Math.random()*2}}
