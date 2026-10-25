@@ -4,9 +4,6 @@ app/build/
 .gradle/
 local.properties
 
-# generated asset (fetched by CI from CDN)
-app/src/main/assets/three.min.js
-
 # artifacts / editor noise
 *.apk
 *.aab
@@ -18,3 +15,6 @@ app/src/main/assets/three.min.js
 # python
 __pycache__/
 *.pyc
+
+# vendor JS (diunduh CI)
+app/src/main/assets/vendor/

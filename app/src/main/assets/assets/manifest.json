@@ -1,0 +1,145 @@
+{
+ "characters": [
+  {
+   "id": "player",
+   "url": "assets/models/characters/player.glb",
+   "scale": 1
+  },
+  {
+   "id": "ped_m1",
+   "url": "assets/models/characters/ped_m1.glb",
+   "scale": 1
+  },
+  {
+   "id": "ped_m2",
+   "url": "assets/models/characters/ped_m2.glb",
+   "scale": 1
+  },
+  {
+   "id": "ped_h1",
+   "url": "assets/models/characters/ped_h1.glb",
+   "scale": 1
+  },
+  {
+   "id": "ped_p1",
+   "url": "assets/models/characters/ped_p1.glb",
+   "scale": 1
+  }
+ ],
+ "vehicles": [
+  {
+   "id": "mobil_player",
+   "url": "assets/models/vehicles/mobil_player.glb",
+   "scale": 1
+  },
+  {
+   "id": "mobil_umum_1",
+   "url": "assets/models/vehicles/mobil_umum_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "mobil_umum_2",
+   "url": "assets/models/vehicles/mobil_umum_2.glb",
+   "scale": 1
+  },
+  {
+   "id": "taksi_bluebird",
+   "url": "assets/models/vehicles/taksi_bluebird.glb",
+   "scale": 1
+  },
+  {
+   "id": "bus_transjakarta",
+   "url": "assets/models/vehicles/bus_transjakarta.glb",
+   "scale": 1
+  },
+  {
+   "id": "bajaj",
+   "url": "assets/models/vehicles/bajaj.glb",
+   "scale": 1
+  },
+  {
+   "id": "mobil_polisi",
+   "url": "assets/models/vehicles/mobil_polisi.glb",
+   "scale": 1
+  }
+ ],
+ "buildings": [
+  {
+   "id": "gedung_pencakar_1",
+   "url": "assets/models/buildings/gedung_pencakar_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "gedung_pencakar_2",
+   "url": "assets/models/buildings/gedung_pencakar_2.glb",
+   "scale": 1
+  },
+  {
+   "id": "ruko_1",
+   "url": "assets/models/buildings/ruko_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "ruko_2",
+   "url": "assets/models/buildings/ruko_2.glb",
+   "scale": 1
+  },
+  {
+   "id": "rumah_menteng_1",
+   "url": "assets/models/buildings/rumah_menteng_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "gedung_kolonial_1",
+   "url": "assets/models/buildings/gedung_kolonial_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "gedung_umum_1",
+   "url": "assets/models/buildings/gedung_umum_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "gedung_umum_2",
+   "url": "assets/models/buildings/gedung_umum_2.glb",
+   "scale": 1
+  },
+  {
+   "id": "monas",
+   "url": "assets/models/buildings/monas.glb",
+   "scale": 1
+  },
+  {
+   "id": "bundaran_hi",
+   "url": "assets/models/buildings/bundaran_hi.glb",
+   "scale": 1
+  },
+  {
+   "id": "stadion_gbk",
+   "url": "assets/models/buildings/stadion_gbk.glb",
+   "scale": 1
+  },
+  {
+   "id": "dufan_bianglala",
+   "url": "assets/models/buildings/dufan_bianglala.glb",
+   "scale": 1
+  }
+ ],
+ "props": [
+  {
+   "id": "pohon_1",
+   "url": "assets/models/props/pohon_1.glb",
+   "scale": 1
+  },
+  {
+   "id": "tiang_lampu",
+   "url": "assets/models/props/tiang_lampu.glb",
+   "scale": 1
+  },
+  {
+   "id": "bendera",
+   "url": "assets/models/props/bendera.glb",
+   "scale": 1
+  }
+ ]
+}

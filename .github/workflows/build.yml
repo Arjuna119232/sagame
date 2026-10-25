@@ -9,8 +9,13 @@ jobs:
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v4
         with: {gradle-version: '8.7'}
-      - name: Unduh three.js
-        run: curl -fL https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js -o app/src/main/assets/three.min.js
+      - name: Unduh three.js r160 (ES module + loader)
+        run: |
+          V=https://cdn.jsdelivr.net/npm/three@0.160.0
+          D=app/src/main/assets/vendor/three
+          mkdir -p $D/build $D/examples/jsm/loaders $D/examples/jsm/utils
+          curl -fL $V/build/three.module.js -o $D/build/three.module.js
+          for f in loaders/GLTFLoader.js loaders/RGBELoader.js utils/SkeletonUtils.js utils/BufferGeometryUtils.js; do curl -fL $V/examples/jsm/$f -o $D/examples/jsm/$f; done
       - run: gradle assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
