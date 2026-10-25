@@ -148,6 +148,17 @@ const dims=(g,d)=>{const s=g.userData.size;g.userData.hw=s.x>0?s.x/2:d[0];g.user
 const RUMAH_PONCOL=[72,0,108];
 SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);
 // pintu rumah menghadap selatan; spawn tepat di depan pintu supaya tidak nyangkut di tembok
+// ---- klaster Poncol Jaya: gang-gang sempit + rumah + toko (data nama gang dari OSM) ----
+const GPN=[['Gang Poncol',RUMAH_PONCOL[0]-18,RUMAH_PONCOL[2]+6],['Gang Poncol Jaya',RUMAH_PONCOL[0]+4,RUMAH_PONCOL[2]+14],['Gang Poncol Gang XI',RUMAH_PONCOL[0]+22,RUMAH_PONCOL[2]+2],['Gang Poncol Gan VIII',RUMAH_PONCOL[0]-10,RUMAH_PONCOL[2]-16],['Gang Mini 1',RUMAH_PONCOL[0]+14,RUMAH_PONCOL[2]-12],['Gang Mini 2',RUMAH_PONCOL[0]-2,RUMAH_PONCOL[2]-22],['Gang Mini 3',RUMAH_PONCOL[0]+18,RUMAH_PONCOL[2]-20],['Gang Amal I',RUMAH_PONCOL[0]-24,RUMAH_PONCOL[2]+12],['Gang Amal II',RUMAH_PONCOL[0]+26,RUMAH_PONCOL[2]+10],['Gang Jati',RUMAH_PONCOL[0]-16,RUMAH_PONCOL[2]+24],['Gang Swadaya',RUMAH_PONCOL[0]+8,RUMAH_PONCOL[2]+26],['Gang Menara',RUMAH_PONCOL[0]+20,RUMAH_PONCOL[2]+20]];
+GPN.forEach(([n,x,z])=>lab(n,x,6,z));
+// rumah-rumah kecil sepanjang gang
+for(let i=0;i<18;i++){const a=GPN[i%GPN.length];const rx=a[1]+(Math.random()-.5)*6,rz=a[2]+(Math.random()-.5)*6;SB.loadAsset('rumah_menteng_1',[rx,0,rz],(Math.random()*4|0)*Math.PI/2)}
+// toko Indomaret/Alfamart di mulut gang
+SB.loadAsset('ruko_1',[RUMAH_PONCOL[0]+30,0,RUMAH_PONCOL[2]-8],Math.PI/2);lab('INDOMARET',RUMAH_PONCOL[0]+30,14,RUMAH_PONCOL[2]-8);
+SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.PI/2);lab('ALFAMART',RUMAH_PONCOL[0]-28,14,RUMAH_PONCOL[2]-6);
+// jalan kapten tendean (jalan utama) label
+lab('JL. KAPTEN TENDEAN',RUMAH_PONCOL[0],18,RUMAH_PONCOL[2]-40);
+lab('JL. KUNINGAN BARAT RAYA',RUMAH_PONCOL[0]+50,18,RUMAH_PONCOL[2]+10);
 lab('PONCOL JAYA',RUMAH_PONCOL[0],14,RUMAH_PONCOL[2]);
 const P=SB.loadAsset('player',[RUMAH_PONCOL[0],0,RUMAH_PONCOL[2]-6]);  // awal di depan rumah, Poncol JayaSB.play(P,'idle');
 const car=dims(SB.loadAsset('mobil_player',[RUMAH_PONCOL[0]+8,0,RUMAH_PONCOL[2]-6]),[1.1,2.3]);
