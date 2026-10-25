@@ -119,51 +119,57 @@ for(let i=-HALF;i<=HALF;i++)for(let j=-HALF;j<=HALF;j++){lampL.push({x:i*BLOK+13
 if(SB.loadInstanced('tiang_lampu',lampL))lampL.forEach(l=>CI.push([l.x,l.z,.35]));
 if(SB.loadInstanced('pohon_1',treeL))treeL.forEach(t=>CI.push([t.x,t.z,.5]));
 
-// ---- marka jalan, jalur sepeda, flyover, lapangan GBK (Jakarta Selatan) ----
+// ---- marka jalan, jalur sepeda, flyover (Jakarta Selatan) ----
+// PENTING: blok/trotoar 28x28 ditaruh di (i*40, j*40), jadi koridor jalan yang
+// benar-benar kosong cuma 12 m, berpusat di 40k+20. Marka versi lama memakai
+// +-14 m sehingga menimpa trotoar dan menembus bangunan.
 const roadMat=(c,o=1)=>new THREE.MeshBasicMaterial({color:c,transparent:o<1,opacity:o});
-// jalan raya grid: garis tengah kuning + garis tepi putih
+const LJR=6;                    // setengah lebar koridor jalan
+const MARKA={};
+const marka=(k,x,z,ry)=>(MARKA[k]=MARKA[k]||[]).push({x,z,ry});
+const dekatSimpang=v=>{const c=Math.round((v-20)/40)*40+20;return Math.abs(v-c)<LJR+2.5};
 for(let k=-7;k<=7;k++){
-  const z=k*40+20;
-  // garis tengah (kuning putus-putus) sepanjang x
-  for(let s=-7;s<=7;s++){
-    const seg=new THREE.Mesh(new THREE.PlaneGeometry(6,1.2),roadMat(0xffd23a));
-    seg.rotation.x=-Math.PI/2;seg.position.set(s*40+20,.04,z);S.add(seg);
+  const c=k*40+20, bike=k>=-3&&k<=3;
+  // ruas lurus 28 m di antara dua persimpangan (26 .. 54)
+  for(let s=-7;s<=6;s++){
+    const m=s*40+40;
+    marka('putih',m,c-LJR+.3,0);marka('putih',m,c+LJR-.3,0);
+    marka('putih',c-LJR+.3,m,Math.PI/2);marka('putih',c+LJR-.3,m,Math.PI/2);
+    if(bike){
+      marka('sepeda',m,c-4.3,0);marka('sepeda',m,c+4.3,0);
+      marka('sepeda',c-4.3,m,Math.PI/2);marka('sepeda',c+4.3,m,Math.PI/2);
+    }
   }
-  // garis tepi putih
-  for(const off of [-14,14]){
-    const e=new THREE.Mesh(new THREE.PlaneGeometry(560,0.6),roadMat(0xffffff));
-    e.rotation.x=-Math.PI/2;e.position.set(0,.04,z+off);S.add(e);
+  // garis tengah putus-putus, dilewati di area persimpangan
+  for(let d=-250;d<=290;d+=10){
+    if(dekatSimpang(d))continue;
+    marka('kuning',d,c,0);marka('kuning',c,d,Math.PI/2);
   }
 }
-for(let k=-7;k<=7;k++){
-  const x=k*40+20;
-  for(let s=-7;s<=7;s++){
-    const seg=new THREE.Mesh(new THREE.PlaneGeometry(1.2,6),roadMat(0xffd23a));
-    seg.rotation.x=-Math.PI/2;seg.position.set(x,.04,s*40+20);S.add(seg);
-  }
-  for(const off of [-14,14]){
-    const e=new THREE.Mesh(new THREE.PlaneGeometry(0.6,560),roadMat(0xffffff));
-    e.rotation.x=-Math.PI/2;e.position.set(x+off,.04,0);S.add(e);
-  }
-}
-// jalur sepeda (hijau) di beberapa jalan
-for(let k=-3;k<=3;k++){
-  const z=k*40+20;
-  const bl=new THREE.Mesh(new THREE.PlaneGeometry(560,3),roadMat(0x2ecc71,.85));
-  bl.rotation.x=-Math.PI/2;bl.position.set(0,.05,z-10);S.add(bl);
+// tiga InstancedMesh (bukan ribuan mesh terpisah) -> hemat draw call
+const markaMesh=(list,w,h,color,op=1)=>{
+  if(!list||!list.length)return;
+  const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(w,h),roadMat(color,op),list.length);
+  const q=new THREE.Quaternion(),e=new THREE.Euler(),p=new THREE.Vector3(),one=new THREE.Vector3(1,1,1),M=new THREE.Matrix4();
+  list.forEach((it,i)=>{e.set(-Math.PI/2,0,it.ry);q.setFromEuler(e);p.set(it.x,.04,it.z);M.compose(p,q,one);im.setMatrixAt(i,M)});
+  im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;S.add(im);
+};
+markaMesh(MARKA.kuning,5,.9,0xffd23a);
+markaMesh(MARKA.putih,28,.3,0xe8e8e8);
+markaMesh(MARKA.sepeda,28,1.9,0x2ecc71,.8);
 
+// flyover: membentang penuh di atas koridor z=20 (median bebas bangunan)
+const FY=9,FZ=20;
+const fly=new THREE.Mesh(new THREE.BoxGeometry(560,.9,11),new THREE.MeshStandardMaterial({color:0x515459,roughness:.92}));
+fly.position.set(0,FY,FZ);S.add(fly);
+const railGeo=new THREE.BoxGeometry(560,.85,.4),railMat=new THREE.MeshStandardMaterial({color:0x9aa0a6,roughness:.85});
+for(const off of [-5.5,5.5]){const r=new THREE.Mesh(railGeo,railMat);r.position.set(0,FY+.85,FZ+off);S.add(r)}
+// tiang di tengah blok (x=40i) supaya tidak menutup persimpangan; ikut collision
+const pilGeo=new THREE.CylinderGeometry(.7,.9,FY,10),pilMat=new THREE.MeshStandardMaterial({color:0x7d8388,roughness:.9});
+for(let i=-7;i<=7;i++){
+  const p=new THREE.Mesh(pilGeo,pilMat);p.position.set(i*40,FY/2,FZ);S.add(p);
+  CI.push([i*40,FZ,1]);
 }
-// flyover (jalan layang) di atas salah satu jalan utama
-const fly=new THREE.Mesh(new THREE.BoxGeometry(260,1,16),new THREE.MeshStandardMaterial({color:0x555555,roughness:.9}));
-fly.position.set(0,9,0);S.add(fly);
-// tiang penyangga flyover
-for(let i=-4;i<=4;i++){const p=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,9,8),new THREE.MeshStandardMaterial({color:0x888888}));p.position.set(i*30,4.5,0);S.add(p)}
-// lapangan GBK: alas hijau + tribun sederhana di sekitar stadion (stadion_gbk sudah di slot i=-3,j=3)
-const gbkX=-3*40,gbkZ=3*40;
-const field=new THREE.Mesh(new THREE.PlaneGeometry(90,120),new THREE.MeshStandardMaterial({color:0x2e8b57}));
-field.rotation.x=-Math.PI/2;field.position.set(gbkX,.06,gbkZ);S.add(field);
-// signage Jakarta Selatan (Indomaret dll) sebagai label di atas ruko area Kuningan
-[['INDOMARET',82,129],['ALFAMART',92,119],['WARUNG NASI',70,118],['BENGKEL MOTOR',60,108]].forEach(a=>lab(a[0],a[1],16,a[2]));
 
 // Titik rumah warga di Poncol Jaya. Harus dideklarasikan SEBELUM blok plang OSM
 // di bawah, karena blok itu sudah memakainya (dulu deklarasinya di bawah -> ReferenceError).
