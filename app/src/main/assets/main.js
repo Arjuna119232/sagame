@@ -117,8 +117,8 @@ J.addEventListener('touchmove',e=>{e.preventDefault();jm(e)});
 J.addEventListener('touchend',()=>{jt=null;jx=jy=0;K.style.left=K.style.top='46px'});
 RU.addEventListener('touchstart',e=>{e.preventDefault();run=true});RU.addEventListener('touchend',()=>run=false);
 A.addEventListener('touchstart',e=>{e.preventDefault();
-  if(!inCar){if(P.position.distanceTo(car.position)<5){inCar=true;P.visible=false;v=0;A.textContent='KELUAR';SFX.play('carEnter')}}
-  else{inCar=false;v=0;const[a,b]=fv(car.rotation.y);P.position.set(car.position.x+b*3,0,car.position.z-a*3);P.rotation.y=car.rotation.y;P.visible=true;A.textContent='MASUK';SFX.play('carExit')}});
+  if(!inCar){if(P.position.distanceTo(car.position)<5){inCar=true;P.visible=false;v=0;A.textContent='KELUAR';SFX.play('carEnter');SFX.startEngine()}}
+  else{inCar=false;v=0;const[a,b]=fv(car.rotation.y);P.position.set(car.position.x+b*3,0,car.position.z-a*3);P.rotation.y=car.rotation.y;P.visible=true;A.textContent='MASUK';SFX.play('carExit');SFX.stopEngine()}});
 addEventListener('resize',()=>{R.setSize(innerWidth,innerHeight);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()});
 // siang-malam
 const cD=new THREE.Color(0x9fd0f0),cN=new THREE.Color(0x070b1a),cK=new THREE.Color(0xff8a50),zD=new THREE.Color(0x3f86d6),zN=new THREE.Color(0x02040c),tmp=new THREE.Color(),zen=new THREE.Color();let nf=0;
@@ -153,6 +153,7 @@ function tick(t){
   // footsteps
   if(mode=='play'&&!inCar&&mv){stepT-=dt;if(stepT<=0){SFX.play(run?'stepRun':'step');stepT=run?.28:.42}}else stepT=0;SB.play(P,pT>0?'punch':mv?(run?'run':'walk'):'idle');
   car.userData.wh.forEach(w=>w.rotation.x+=v*dt/.38);
+  if(inCar)SFX.setEngineSpeed(Math.min(1,Math.abs(v)/25));
   if(punch){punch=false;for(const m of PD){if(m.userData.dead>0||!m.visible)continue;const dx=m.position.x-P.position.x,dz=m.position.z-P.position.z,d=Math.hypot(dx,dz),[fa,fb]=fv(P.rotation.y);if(d<1.9&&(dx*fa+dz*fb)/d>.3){m.userData.dead=4;m.rotation.x=-1.5;score+=10;heat+=.5;STAT.hits++;SFX.play('npcHit');SFX.play('score')}}}
   for(const m of PD){const u=m.userData;
     if(u.dead>0){u.dead-=dt;if(u.dead<=0){m.rotation.x=0;spawn(m)}continue}
@@ -170,8 +171,10 @@ function tick(t){
     const dx=T.position.x-g.position.x,dz=T.position.z-g.position.z,d=Math.hypot(dx,dz);near=Math.min(near,d);
     g.rotation.y=Math.atan2(dx,dz);slide(g,9+stn*3,dt,2);g.userData.wh.forEach(w=>w.rotation.x+=10*dt);
     const fl=Math.floor(tm*6)%2==0;g.userData.li[0].intensity=fl?40:0;g.userData.li[1].intensity=fl?0:40;
-    if(d<3&&Math.abs(inCar?v:0)<4){heat=0;score=Math.max(0,score-50);inCar=false;v=0;P.visible=true;P.position.set(0,0,-9);car.position.set(9,0,-12);car.rotation.y=0;A.textContent='MASUK';msg='TERTANGKAP! -50';msgT=3;SFX.play('caught')}});
+    if(d<3&&Math.abs(inCar?v:0)<4){heat=0;score=Math.max(0,score-50);inCar=false;v=0;P.visible=true;P.position.set(0,0,-9);car.position.set(9,0,-12);car.rotation.y=0;A.textContent='MASUK';msg='TERTANGKAP! -50';msgT=3;SFX.play('caught');SFX.stopEngine()}});
   heat=Math.max(0,heat-dt*(near>70?.25:.04));msgT-=dt;if(crashT>0)crashT-=dt;
+  // ambient traffic/city sounds
+  if(mode=='play'){trafT-=dt;if(trafT<=0){SFX.trafficPass();trafT=3+Math.random()*5}cityT-=dt;if(cityT<=0){SFX.cityWind();cityT=8+Math.random()*6}npcStepT-=dt;if(npcStepT<=0){SFX.npcStep();npcStepT=1.5+Math.random()*2}}
   // sound: siren when heat high or police near; ambient level by heat
   try{SFX.setSiren(heat>1.5||near<40);SFX.setAmbientLevel(mode=='play'?(.6+heat*.1):.3)}catch(e){}
   if(mode=='play'||mode=='pause'){lookT-=dt;if(inCar&&lookT<=0&&lt===null){let df=T.rotation.y-cy;df=Math.atan2(Math.sin(df),Math.cos(df));cy+=df*Math.min(1,3*dt)}
@@ -193,7 +196,7 @@ function tick(t){
   X.setTransform(1,0,0,1,0,0);X.fillStyle='#fff';X.beginPath();X.arc(60,60,4,0,6.3);X.fill();
   const lv=mode=='menu'||mode=='play'||mode=='pause';for(const l of LB){const q=l.v.clone().project(C);if(!lv||q.z>1||C.position.distanceTo(l.v)>EDGE-15){l.e.style.display='none';continue}l.e.style.display='block';l.e.style.left=(q.x*.5+.5)*innerWidth+'px';l.e.style.top=(-q.y*.5+.5)*innerHeight+'px'}
   R.render(S,C);requestAnimationFrame(tick)}
-let svT=15,cy=0,pitch=.35,lt=null,lx=0,ly=0,lookT=0,punch=false,pT=0,stepT=0,crashT=0;
+let svT=15,cy=0,pitch=.35,lt=null,lx=0,ly=0,lookT=0,punch=false,pT=0,stepT=0,crashT=0,trafT=4,cityT=6,npcStepT=1;
 const bx=(g,x,z,r)=>{const hw=g.userData.hw||1.1,hl=g.userData.hl||2.3,dx=x-g.position.x,dz=z-g.position.z,s=Math.sin(g.rotation.y),c=Math.cos(g.rotation.y);return Math.abs(dx*s+dz*c)<hl+r&&Math.abs(dx*c-dz*s)<hw+r};
 const vb=(x,z,r)=>{for(const g of TR)if(g.visible&&bx(g,x,z,r))return g;for(const g of PO)if(g.visible&&bx(g,x,z,r))return g;if(!inCar&&bx(car,x,z,r))return car;return null};
 document.addEventListener('touchstart',e=>{if(mode!='play'||lt!==null)return;for(const t of e.changedTouches){if(t.target.closest&&t.target.closest('#joy,.b,.scr'))continue;lt=t.identifier;lx=t.clientX;ly=t.clientY;break}},{passive:false});

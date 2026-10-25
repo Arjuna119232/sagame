@@ -101,9 +101,43 @@ export const SFX = (() => {
   }
   function setSiren(on) { if (on) startSiren(); else stopSiren(); }
 
+
+  // Engine sound (loop, pitch by speed)
+  let engOsc = null, engGain = null, engFilter = null;
+  function startEngine() {
+    if (!ready || muted || engOsc) return;
+    engOsc = ctx.createOscillator(); engOsc.type = 'sawtooth'; engOsc.frequency.value = 55;
+    engFilter = ctx.createBiquadFilter(); engFilter.type = 'lowpass'; engFilter.frequency.value = 400;
+    engGain = gain(0, master);
+    engOsc.connect(engFilter); engFilter.connect(engGain); engOsc.start();
+    engGain.gain.linearRampToValueAtTime(.22 * vol.sfx, ctx.currentTime + .3);
+  }
+  function setEngineSpeed(s) { // 0..1
+    if (!engOsc) return;
+    const f = 55 + s * 140;
+    engOsc.frequency.linearRampToValueAtTime(f, ctx.currentTime + .1);
+    engFilter.frequency.linearRampToValueAtTime(300 + s * 900, ctx.currentTime + .1);
+    engGain.gain.linearRampToValueAtTime((.12 + s * .2) * vol.sfx, ctx.currentTime + .1);
+  }
+  function stopEngine() {
+    if (!engOsc) return;
+    try { engGain.gain.linearRampToValueAtTime(0, ctx.currentTime + .3); } catch(e){}
+    setTimeout(() => { try { engOsc.stop(); } catch(e){} engOsc = null; engGain = null; engFilter = null; }, 350);
+  }
+  // Traffic pass (random whoosh/horn)
+  function trafficPass() {
+    if (!ready || muted) return;
+    if (Math.random() < .5) { noise(.25, .45, 300); osc('sawtooth', 140 + Math.random()*60, .25, .35, null, -40); }
+    else { seq([[300+Math.random()*200,.08],[200+Math.random()*150,.12]], 'square', .05, .3); }
+  }
+  // NPC footsteps (distant)
+  function npcStep() { if (!ready || muted) return; noise(.04, .12, 500); }
+  // City ambience boost (wind)
+  function cityWind() { if (!ready || muted) return; noise(.6, .08, 200); }
+
   function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : vol.master; if (m) stopSiren(); }
   function isMuted() { return muted; }
   function setMaster(v) { vol.master = v; if (master && !muted) master.gain.value = v; }
 
-  return { init, play, setMuted, isMuted, setMaster, setSiren, setAmbientLevel, resume };
+  return { init, play, setMuted, isMuted, setMaster, setSiren, setAmbientLevel, resume, startEngine, setEngineSpeed, stopEngine, trafficPass, npcStep, cityWind };
 })();
