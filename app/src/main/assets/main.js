@@ -3,6 +3,7 @@ import { AssetLoader } from './AssetLoader.js';
 import { SceneBuilder } from './SceneBuilder.js';
 import { setupRenderer, setupLights, loadEnv, setDay } from './MaterialSetup.js';
 import { SFX } from './SoundFx.js';
+import { MUSIC } from './Music.js';
 import { DUNIA, MAX_LALULINTAS, JUMLAH_NPC, jumlahMenara, komposisiNPC, rencanaLaluLintas, profilKotaHtml } from './KotaData.js';
 
 // Ukuran dunia diturunkan dari KotaData.js (15x15 blok x 40 m = 600 m).
@@ -12,24 +13,24 @@ const BATAS=EDGE+10, ZMIN=-(EDGE-25), TRW=EDGE-15, SPAWN=EDGE-20;
 const $=id=>document.getElementById(id);
 let mode='splash',cur='',prevScr='menu',ld=false,vp=false,ST={g:1,f:1,t:1,s:1,m:1,a:1},STAT={best:0,time:0,hits:0};
 try{Object.assign(ST,JSON.parse(localStorage.getItem('pgs_st')||'{}'));Object.assign(STAT,JSON.parse(localStorage.getItem('pgs_stat')||'{}'))}catch(e){}
-if(ST.a===0)SFX.setMuted(true);
+if(ST.a===0){SFX.setMuted(true);MUSIC.setMuted(true);}
 const svS=()=>{try{localStorage.setItem('pgs_st',JSON.stringify(ST));localStorage.setItem('pgs_stat',JSON.stringify(STAT))}catch(e){}};
 function show(id){cur=id;document.querySelectorAll('.scr').forEach(e=>e.style.display=e.id==id?'flex':'none');if(id&&id!=='')SFX.play('click')}
-function startPlay(){mode='play';document.body.classList.add('play');show('');SFX.play('start');SFX.setAmbientLevel(1)}
+function startPlay(){mode='play';document.body.classList.add('play');show('');MUSIC.stop();SFX.play('start');SFX.setAmbientLevel(1)}
 function pauseGame(){mode='pause';svS();show('pause');SFX.play('pause');SFX.setAmbientLevel(.3)}
 function resumeGame(){mode='play';show('');SFX.play('resume');SFX.setAmbientLevel(1)}
-function toMenu(){mode='menu';svS();document.body.classList.remove('play');show('menu');SFX.setAmbientLevel(.2)}
+function toMenu(){mode='menu';svS();document.body.classList.remove('play');show('menu');MUSIC.start();SFX.setAmbientLevel(.2)}
 const SD=[['GRAFIS','g',['HEMAT','TINGGI']],['JARAK PANDANG','f',['DEKAT','SEDANG','JAUH']],['LALU LINTAS','t',['SEDIKIT','NORMAL','RAMAI']],['KEPEKAAN KEMUDI','s',['RENDAH','NORMAL','TINGGI']],['MINIMAP','m',['MATI','AKTIF']],['SUARA','a',['MATI','AKTIF']]];
 function openSet(f){prevScr=f;show('sett');renderSet()}
 function renderSet(){$('sl').innerHTML=SD.map((r,i)=>'<div class="mi row" onclick="chg('+i+')"><span>'+r[0]+'</span><b>'+r[2][ST[r[1]]]+'</b></div>').join('')}
-function chg(i){const r=SD[i];ST[r[1]]=(ST[r[1]]+1)%r[2].length;svS();renderSet();if(r[1]=='a'){SFX.setMuted(ST.a===0)};window.AP&&AP()}
+function chg(i){const r=SD[i];ST[r[1]]=(ST[r[1]]+1)%r[2].length;svS();renderSet();if(r[1]=='a'){SFX.setMuted(ST.a===0);MUSIC.setMuted(ST.a===0)};window.AP&&AP()}
 function showProfil(){$('pft').innerHTML=profilKotaHtml();show('profil')}
 function showStats(){$('stt').innerHTML='SKOR TERTINGGI: '+STAT.best+'<br>WAKTU MAIN: '+(STAT.time/60|0)+' MENIT<br>TABRAKAN PEJALAN KAKI: '+STAT.hits;show('stats')}
 function bk(){if(mode=='play')pauseGame();else if(cur=='pause')resumeGame();else if(cur=='sett')show(prevScr);else if(cur=='brief'||cur=='stats'||cur=='profil')show('menu');else if(cur=='menu'&&window.Android)Android.quit()}
 const TIPS=['Dekati mobil lalu tekan MASUK untuk mengemudi.','Tahan LARI/REM saat menyetir untuk mengerem.','Di Jakarta kendaraan lewat di lajur kiri.','Makin banyak bintang, makin cepat polisi mengejar.','Monas ada di pusat kota, titik awal permainanmu.','Geser layar (sisi kanan) untuk melihat kiri/kanan.','Pohon, tiang, dan kendaraan itu padat. Jangan menabrak.'];
 function setBar(p){$('barf').style.width=p+'%';$('pct').textContent='Memuat dunia Jakarta... '+Math.min(100,p|0)+'%'}
 function skyline(){const c=$('sk'),x=c.getContext('2d');c.width=480;c.height=270;const g=x.createLinearGradient(0,0,0,270);g.addColorStop(0,'#2b1b4a');g.addColorStop(.6,'#e8693a');g.addColorStop(1,'#ffb35a');x.fillStyle=g;x.fillRect(0,0,480,270);x.fillStyle='#120c1c';for(let i=0;i<60;i++){const w=10+Math.random()*18,h=30+Math.random()*(i>20&&i<40?110:55);x.fillRect(i*8-10,270-h,w,h)}x.fillRect(236,70,8,200);x.beginPath();x.arc(240,66,6,0,6.3);x.fillStyle='#ffc830';x.fill()}
-function toLoad(){if(ld)return;ld=true;mode='load';show('load');skyline();let k=0;$('tip').textContent=TIPS[0];const tv=setInterval(()=>{$('tip').textContent=TIPS[++k%TIPS.length]},1600);setBar(8);
+function toLoad(){if(ld)return;ld=true;mode='load';show('load');MUSIC.start();skyline();let k=0;$('tip').textContent=TIPS[0];const tv=setInterval(()=>{$('tip').textContent=TIPS[++k%TIPS.length]},1600);setBar(8);
   setTimeout(()=>setBar(30),400);
   setTimeout(async()=>{try{await boot(ST.g?2:1)}catch(e){console.error(e);$('pct').textContent='Gagal memuat: '+e.message;return}setBar(70);let p=70;const iv=setInterval(()=>{p+=6;setBar(p);if(p>=100){clearInterval(iv);clearInterval(tv);setTimeout(()=>{mode='menu';show('menu');SFX.play('menu')},300)}},120)},900)}
 
