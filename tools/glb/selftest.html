@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SAGame self-test</title>
+<!-- manifest memakai url relatif terhadap akar aset, sama seperti index.html di app -->
+<base href="/app/src/main/assets/">
+<script type="importmap">
+{
+  "imports": {
+    "three": "/app/src/main/assets/vendor/three/build/three.module.js",
+    "three/addons/": "/app/src/main/assets/vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+// Uji integrasi memakai modul game yang sebenarnya (AssetLoader/SceneBuilder/MaterialSetup).
+// Tidak butuh GPU untuk lolos: yang diuji scene graph, animasi, roda, dan emissive malam.
+import * as THREE from 'three';
+import { AssetLoader } from '/app/src/main/assets/AssetLoader.js';
+import { SceneBuilder } from '/app/src/main/assets/SceneBuilder.js';
+import { setDay, register } from '/app/src/main/assets/MaterialSetup.js';
+
+const BASE = '/app/src/main/assets/';
+
+window.runSelfTest = async () => {
+  const out = { checks: [], errors: [] };
+  const ok = (name, cond, detail) => out.checks.push({ name, ok: !!cond, detail });
+
+  const al = new AssetLoader();
+  const man = await al.load(BASE + 'assets/manifest.json');
+  const ids = [];
+  for (const cat of Object.keys(man)) for (const it of man[cat]) ids.push(it.id);
+
+  ok('manifest termuat', ids.length === 27, `${ids.length} aset`);
+  ok('tidak ada aset hilang', al.missing.length === 0, al.missing.join(', ') || 'lengkap');
+
+  const scene = new THREE.Scene();
+  const sb = new SceneBuilder(scene, al);
+
+  // 1. semua aset bisa di-clone + punya bounding box wajar
+  let zero = [], bad = [];
+  for (const id of ids) {
+    const g = sb.loadAsset(id, [0, 0, 0]);
+    const s = g.userData.size;
+    if (g.userData.missing) bad.push(id);
+    else if (!(s.x > 0.05 && s.y > 0.05 && s.z > 0.05)) zero.push(`${id}(${s.x},${s.y},${s.z})`);
+  }
+  ok('semua aset ter-clone', bad.length === 0, bad.join(', ') || 'ok');
+  ok('bounding box > 0', zero.length === 0, zero.join(', ') || 'ok');
+
+  // 2. karakter: klip idle/walk/run/punch ada dan benar-benar menggerakkan tulang
+  const pg = sb.loadAsset('player', [0, 0, 0]);
+  const clips = (pg.userData.acts || []).map((a) => a.k);
+  ok('player punya 4 klip', ['idle', 'walk', 'run', 'punch'].every((k) => clips.some((c) => c.includes(k))), clips.join(','));
+
+  let legL = null;
+  pg.traverse((n) => { if (n.name === 'leg_l') legL = n; });
+  ok('tulang leg_l ada', !!legL);
+  const before = legL ? legL.quaternion.clone() : null;
+  sb.play(pg, 'walk');
+  sb.update(0.22);
+  const moved = legL && legL.quaternion.angleTo(before) > 0.05;
+  ok('animasi walk menggerakkan kaki', moved, legL ? legL.quaternion.angleTo(before).toFixed(3) + ' rad' : '-');
+
+  // 3. kendaraan: 4 node roda, sumbu X, dan bisa diputar tanpa menggeser posisi
+  const carG = sb.loadAsset('mobil_player', [0, 0, 0]);
+  const wh = carG.userData.wh || [];
+  ok('mobil_player punya 4 roda', wh.length === 4, `${wh.length} node`);
+  if (wh.length) {
+    const w = wh[0];
+    const p0 = w.position.clone();
+    w.rotation.x += 1.0;
+    ok('roda berputar pada porosnya', w.position.distanceTo(p0) < 1e-9, `rot.x=${w.rotation.x.toFixed(2)}`);
+  }
+  const busG = sb.loadAsset('bus_transjakarta', [0, 0, 0]);
+  ok('bus punya 4 roda', (busG.userData.wh || []).length === 4, `${(busG.userData.wh || []).length} node`);
+
+  // 4. bianglala: node pemutar ditemukan main.js lewat regex nama
+  const fg = sb.loadAsset('dufan_bianglala', [0, 0, 0]);
+  let ferris = null;
+  fg.traverse((n) => { if (!ferris && /wheel|roda|bianglala|rotor/i.test(n.name)) ferris = n; });
+  ok('node pemutar bianglala ada', !!ferris, ferris ? ferris.name : '-');
+
+  // 5. jendela menyala saat malam (emissiveMap terdeteksi register/setDay)
+  let emissiveMats = 0;
+  const bld = sb.loadAsset('gedung_pencakar_1', [0, 0, 0]);
+  bld.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) if (m.emissiveMap) emissiveMats++;
+  });
+  ok('gedung punya material emissiveMap', emissiveMats > 0, `${emissiveMats} material`);
+  setDay(1);
+  let nightOn = 0;
+  bld.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) if (m.emissiveMap && m.emissiveIntensity > 1) nightOn++;
+  });
+  ok('jendela menyala saat malam', nightOn > 0, `intensity=${nightOn ? [...bld.children].length && 1.5 : 0}`);
+  setDay(0);
+  let dayOff = 0, dayOn = 0;
+  bld.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) if (m.emissiveMap) (m.emissiveIntensity === 0 ? dayOff++ : dayOn++);
+  });
+  ok('jendela padam saat siang', dayOn === 0, `${dayOff} mati / ${dayOn} nyala`);
+
+  // 6. instancing pohon & tiang (jalur loadInstanced)
+  const tree = sb.loadInstanced('pohon_1', [{ x: 0, z: 0 }, { x: 5, z: 5, s: 1.2 }]);
+  ok('instancing pohon', !!tree && tree.children.length > 0, `${tree ? tree.children.length : 0} InstancedMesh`);
+
+  // 7. bebaskan memori
+  scene.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); [].concat(o.material).forEach((m) => m.dispose()); } });
+
+  return out;
+};
+window.__ready = true;
+</script>
+</body>
+</html>

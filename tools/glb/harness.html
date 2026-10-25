@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SAGame GLB factory</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/app/src/main/assets/vendor/three/build/three.module.js",
+    "three/addons/": "/app/src/main/assets/vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+import { buildAll, buildOne, listModels, REGISTRY } from '/tools/glb/factory.js';
+window.buildAll = buildAll;
+window.buildOne = buildOne;
+window.listModels = listModels;
+window.REGISTRY = REGISTRY;
+window.__ready = true;
+</script>
+</body>
+</html>

@@ -18,3 +18,6 @@ __pycache__/
 
 # vendor JS (diunduh CI)
 app/src/main/assets/vendor/
+
+# dependensi tool (playwright untuk tools/glb)
+node_modules

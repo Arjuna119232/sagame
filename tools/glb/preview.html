@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#20242c;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/app/src/main/assets/vendor/three/build/three.module.js",
+    "three/addons/": "/app/src/main/assets/vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+// Preview semua GLB di grid datar: tanpa HDR/PMREM, tanpa shadow, cahaya sederhana.
+// Dipakai untuk memverifikasi bentuk/ukuran/warna aset secara visual (headless).
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const params = new URLSearchParams(location.search);
+const only = params.get('only');            // filter: substring url
+const manifest = await (await fetch('/app/src/main/assets/assets/manifest.json')).json();
+const items = [];
+for (const cat of Object.keys(manifest)) for (const it of manifest[cat]) items.push({ ...it, cat });
+let list = items.filter((it) => !only || it.url.includes(only));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x20242c);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 500);
+scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x40464e, 2.0));
+const key = new THREE.DirectionalLight(0xfff2dd, 2.2); key.position.set(6, 10, 8); scene.add(key);
+const fill = new THREE.DirectionalLight(0x9fc6ff, 0.7); fill.position.set(-8, 4, -6); scene.add(fill);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(400, 400),
+  new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.95 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const loader = new GLTFLoader();
+const report = [];
+const cols = 6, gapX = 9, gapZ = 11;
+let i = 0, maxH = 1;
+for (const it of list) {
+  try {
+    const g = await loader.loadAsync('/app/src/main/assets/' + it.url);
+    const o = g.scene;
+    o.traverse((n) => {
+      if (!n.isMesh) return;
+      n.material = new THREE.MeshStandardMaterial({
+        color: n.material.color, map: n.material.map, emissive: n.material.emissive,
+        emissiveMap: n.material.emissiveMap, roughness: n.material.roughness, metalness: n.material.metalness,
+      });
+    });
+    const b = new THREE.Box3().setFromObject(o);
+    const sz = b.getSize(new THREE.Vector3());
+    const c = cols, r = Math.floor(i / cols);
+    o.position.set((i % c - (c - 1) / 2) * gapX, 0, r * gapZ);
+    scene.add(o);
+    maxH = Math.max(maxH, sz.y);
+    report.push({ url: it.url.split('/').pop(), ok: true, size: [sz.x, sz.y, sz.z], clips: g.animations.length });
+  } catch (e) {
+    report.push({ url: it.url, ok: false, err: String(e.message || e) });
+  }
+  i++;
+}
+
+const rows = Math.ceil(list.length / cols);
+const dist = Math.max(30, rows * gapZ * 0.85 + 14);
+camera.position.set(0, Math.max(12, maxH * 0.75), dist);
+camera.lookAt(0, Math.max(2, maxH * 0.3), 0);
+
+let frames = 0;
+function loop() {
+  renderer.render(scene, camera);
+  if (++frames === 4) window.__rendered = report;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

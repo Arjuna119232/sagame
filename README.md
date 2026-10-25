@@ -9,11 +9,10 @@ landscape) dengan package `com.karta.sagame`.
   agar ES module dan `fetch()` aset `.glb` berjalan (bukan `file://`)
 - Jembatan JS → native: `window.Android.quit()`
 
-> **Status v0.4:** seluruh isi dunia (gedung, karakter, kendaraan, properti) sudah
-> dipindah ke pipeline **GLB/PBR**, tetapi **berkas `.glb` belum ada di repo**.
-> Akibatnya dunia tampil kosong (hanya jalan, trotoar, laut, bintang) dan console
-> mencetak `MISSING ASSET: <id>` untuk 27 aset. Lihat bagian
-> [Pipeline aset GLB/PBR](#pipeline-aset-glbpbr).
+> **Status v0.5:** seluruh 27 aset `.glb` (5 karakter, 7 kendaraan, 12 gedung,
+> 3 properti) **sudah ada di repo** dan dimuat tanpa `MISSING ASSET`. Model dibuat
+> secara programatik lewat `tools/glb/` sehingga bisa dibangun ulang kapan saja —
+> lihat [Regenerasi aset](#regenerasi-aset).
 
 ## Struktur
 
@@ -29,13 +28,18 @@ app/src/main/
 │   ├── intro.mp4                       # video splash (tools/make_intro.py)
 │   ├── assets/
 │   │   ├── manifest.json               # daftar 27 aset + url/scale/yaw
-│   │   ├── env/sky.hdr                 # placeholder HDRI gradasi
-│   │   └── models/{characters,buildings,vehicles,props}/
+│   │   ├── env/sky.hdr                 # HDRI gradasi (tools/make_sky.py)
+│   │   └── models/{characters,buildings,vehicles,props}/*.glb
 │   └── vendor/three/                   # three.js r160 (diunduh CI, gitignore)
 └── java/com/karta/sagame/
     └── MainActivity.java               # WebView + WebViewAssetLoader
 
 tools/make_intro.py                     # generator video splash (Pillow + ffmpeg)
+tools/make_sky.py                       # generator HDRI langit (Radiance .hdr)
+tools/glb/factory.js                    # resep 27 model: gedung, kendaraan, karakter, props
+tools/glb/build-assets.js               # ekspor + validasi GLB (Chromium headless)
+tools/glb/selftest.js                   # uji integrasi pakai modul game asli
+tools/glb/preview.html                  # grid pratinjau semua model di browser
 ```
 
 ## Pipeline aset GLB/PBR
@@ -62,6 +66,35 @@ kosong + log `MISSING ASSET: <id>` (dunia tampak kosong sampai GLB diisi).
 - Gedung: tambahkan emissiveMap pada jendela agar menyala saat malam. Ukuran kolisi
   diambil otomatis dari bounding box.
 
+### Regenerasi aset
+
+Semua model dibuat dari kode (three.js + `GLTFExporter`) di dalam Chromium headless,
+karena tekstur jendela butuh canvas. Hasilnya deterministik.
+
+```sh
+# sekali saja: dependensi tool
+npm i playwright-core && npx playwright install chromium
+# bila Chromium tidak terdeteksi otomatis:
+# export CHROME_PATH=/path/ke/chrome
+
+# tulis ulang ke-27 GLB + validasi kontrak (ukuran, origin, klip, roda, emissive)
+bun tools/glb/build-assets.js
+
+# hanya memeriksa GLB yang sudah ada (tanpa menulis)
+bun tools/glb/build-assets.js --check
+
+# uji integrasi: AssetLoader + SceneBuilder + animasi + roda + jendela malam
+bun tools/glb/selftest.js
+```
+
+`build-assets.js` menolak aset yang menyalahi kontrak: origin bukan di dasar,
+dimensi di luar rentang wajar per kategori, klip animasi tidak lengkap, roda kurang
+dari 4 node, atau gedung berjendela tanpa `emissiveMap`.
+
+Melihat bentuk model tanpa menjalankan game: buka `tools/glb/preview.html` lewat
+HTTP server (mis. `python3 -m http.server`), tambahkan `?only=buildings` untuk
+menyaring kategori.
+
 ### ID yang dipakai game
 
 `characters`: player, ped_m1, ped_m2, ped_h1, ped_p1 ·
@@ -71,8 +104,14 @@ kosong + log `MISSING ASSET: <id>` (dunia tampak kosong sampai GLB diisi).
 
 ### Lingkungan & sumber aset
 
-`assets/env/sky.hdr` hanya placeholder gradasi; ganti dengan HDRI asli (mis. Poly Haven,
-CC0), nama file sama. Model CC0/bebas: Kenney.nl, Quaternius, Poly Pizza, Sketchfab
+`assets/env/sky.hdr` adalah HDRI gradasi yang dihasilkan `tools/make_sky.py`
+(equirectangular 512x256, Radiance RGBE, radiance rata-rata ~0,25 dengan disk
+matahari ~49). Bisa diganti HDRI asli (mis. Poly Haven, CC0) dengan nama file sama;
+jaga agar nilainya tetap fotometrik — HDRI dengan nilai ekstrem akan membuat seluruh
+scene terbakar putih.
+
+Model dibuat sendiri (bukan aset pihak ketiga), jadi tidak ada urusan lisensi.
+Untuk mengganti dengan model CC0: Kenney.nl, Quaternius, Poly Pizza, Sketchfab
 (cek lisensi).
 
 ## Kontrol
@@ -146,11 +185,15 @@ ANDROID_HOME=/opt/android-sdk ./gradlew assembleDebug
 ## Rilis
 
 APK debug ditandatangani debug keystore dan diunggah sebagai asset GitHub Release
-(`v0.1`–`v0.4`). Untuk distribusi serius, buat keystore rilis sendiri dan
+(`v0.1`–`v0.5`). Untuk distribusi serius, buat keystore rilis sendiri dan
 konfigurasikan `signingConfigs` di `app/build.gradle`.
 
 ## Riwayat versi
 
+- **v0.5** — **dunia terisi**: 27 aset `.glb` lengkap (low-poly PBR) + generator
+  `tools/glb/`. Karakter punya 4 klip animasi, kendaraan punya node roda, bianglala
+  berputar, jendela gedung menyala saat malam. `sky.hdr` diperbaiki (placeholder
+  v0.4 punya radiance ~4,5x10^30 sehingga layar putih total).
 - **v0.4** — refactor ke pipeline **GLB/PBR**: three.js r160 ES module, `AssetLoader` /
   `SceneBuilder` / `MaterialSetup`, HDR environment, `WebViewAssetLoader`, manifest 27 aset.
   **Berkas `.glb` belum disertakan** → dunia kosong sampai aset diisi.
@@ -164,4 +207,9 @@ konfigurasikan `signingConfigs` di `app/build.gradle`.
 - Tombol back memanggil `window.bk()` (jeda/kembali/keluar).
 - Peringatan "aset GLB belum lengkap" di layar loading cepat tertimpa teks tips
   bergilir; cek `console`/logcat untuk daftar `MISSING ASSET`.
+- Verifikasi otomatis tidak butuh GPU: `build-assets.js` memeriksa header GLB, bounding
+  box, nama node/klip, dan tekstur; `selftest.js` menjalankan modul game asli. Render
+  visual tetap harus dicek di perangkat — Chromium headless di lingkungan build ini
+  mengembalikan piksel kosong (SwiftShader tanpa GPU), jadi screenshot tidak bisa
+  dipakai sebagai bukti.
 - APK debug — bukan untuk distribusi publik.
