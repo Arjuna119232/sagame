@@ -165,6 +165,10 @@ field.rotation.x=-Math.PI/2;field.position.set(gbkX,.06,gbkZ);S.add(field);
 // signage Jakarta Selatan (Indomaret dll) sebagai label di atas ruko area Kuningan
 [['INDOMARET',82,129],['ALFAMART',92,119],['WARUNG NASI',70,118],['BENGKEL MOTOR',60,108]].forEach(a=>lab(a[0],a[1],16,a[2]));
 
+// Titik rumah warga di Poncol Jaya. Harus dideklarasikan SEBELUM blok plang OSM
+// di bawah, karena blok itu sudah memakainya (dulu deklarasinya di bawah -> ReferenceError).
+const RUMAH_PONCOL=[72,0,108];
+
 // ---- plang jalan tambahan dari data OSM (Jakarta Selatan) ----
 const JALAN_OSM = [
  ['JL. PONCOL GANG I',-22,-8],['JL. PONCOL GANG II',-14,-14],['JL. PONCOL GANG III',-6,-20],
@@ -211,7 +215,6 @@ JALAN_OSM.forEach(([n,dx,dz],i)=>{
 
 // ---- karakter & kendaraan (GLB)
 const dims=(g,d)=>{const s=g.userData.size;g.userData.hw=s.x>0?s.x/2:d[0];g.userData.hl=s.z>0?s.z/2:d[1];return g};
-const RUMAH_PONCOL=[72,0,108];
 const _hr0=SB.loadAsset('rumah_menteng_1',RUMAH_PONCOL,0);BU.push({x:RUMAH_PONCOL[0],z:RUMAH_PONCOL[2],r:Math.max(_hr0.userData.size.x,_hr0.userData.size.z)/2*.85});
 // pintu rumah menghadap selatan; spawn tepat di depan pintu supaya tidak nyangkut di tembok
 // ---- klaster Poncol Jaya: gang-gang sempit + rumah + toko (data nama gang dari OSM) ----
@@ -226,7 +229,7 @@ const _r2=SB.loadAsset('ruko_2',[RUMAH_PONCOL[0]-28,0,RUMAH_PONCOL[2]-6],-Math.P
 plang('JL. KAPTEN TENDEAN',RUMAH_PONCOL[0],RUMAH_PONCOL[2]-40,0);
 plang('JL. KUNINGAN BARAT RAYA',RUMAH_PONCOL[0]+50,RUMAH_PONCOL[2]+10,Math.PI/2);
 lab('PONCOL JAYA',RUMAH_PONCOL[0],14,RUMAH_PONCOL[2]);
-const P=SB.loadAsset('player',[RUMAH_PONCOL[0],0,RUMAH_PONCOL[2]-6]);  // awal di depan rumah, Poncol JayaSB.play(P,'idle');
+const P=SB.loadAsset('player',[RUMAH_PONCOL[0],0,RUMAH_PONCOL[2]-6]);SB.play(P,'idle');  // awal di depan rumah, Poncol Jaya
 const car=dims(SB.loadAsset('mobil_player',[RUMAH_PONCOL[0]+8,0,RUMAH_PONCOL[2]-6]),[1.1,2.3]);
 const spot=new THREE.SpotLight(0xfff2cc,0,70,.5,.5),stg=new THREE.Object3D();spot.position.set(0,1,2);stg.position.set(0,0,20);car.add(spot,stg);spot.target=stg;
 const TR=[],PO=[],PD=[];
