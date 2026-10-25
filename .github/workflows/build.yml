@@ -9,6 +9,20 @@ jobs:
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v4
         with: {gradle-version: '8.7'}
+      - name: Restore signing keystore
+        env:
+          SAGAME_KEYSTORE_BASE64: ${{ secrets.SAGAME_KEYSTORE_BASE64 }}
+          SAGAME_KEYSTORE_PASSWORD: ${{ secrets.SAGAME_KEYSTORE_PASSWORD }}
+          SAGAME_KEY_ALIAS: ${{ secrets.SAGAME_KEY_ALIAS }}
+          SAGAME_KEY_PASSWORD: ${{ secrets.SAGAME_KEY_PASSWORD }}
+        run: |
+          if [ -n "$SAGAME_KEYSTORE_BASE64" ]; then
+            echo "$SAGAME_KEYSTORE_BASE64" | base64 -d > app/keystore.jks
+            echo "STORE_FILE=$PWD/app/keystore.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=$SAGAME_KEYSTORE_PASSWORD" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$SAGAME_KEY_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$SAGAME_KEY_PASSWORD" >> $GITHUB_ENV
+          fi
       - name: Unduh three.js r160 (ES module + loader)
         run: |
           V=https://cdn.jsdelivr.net/npm/three@0.160.0
@@ -17,6 +31,11 @@ jobs:
           curl -fL $V/build/three.module.js -o $D/build/three.module.js
           for f in loaders/GLTFLoader.js loaders/RGBELoader.js utils/SkeletonUtils.js utils/BufferGeometryUtils.js; do curl -fL $V/examples/jsm/$f -o $D/examples/jsm/$f; done
       - run: gradle assembleDebug --no-daemon
+        env:
+          STORE_FILE: ${{ env.STORE_FILE }}
+          STORE_PASSWORD: ${{ env.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ env.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: SAGame-debug-apk

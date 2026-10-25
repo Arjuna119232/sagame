@@ -5,6 +5,25 @@ android{
   buildToolsVersion '35.0.0'
   defaultConfig{applicationId 'com.karta.sagame';minSdk 24;targetSdk 34;versionCode 7;versionName '0.7'}
   compileOptions{sourceCompatibility JavaVersion.VERSION_17;targetCompatibility JavaVersion.VERSION_17}
+  signingConfigs {
+    release {
+      if (System.getenv('STORE_FILE')) {
+        storeFile file(System.getenv('STORE_FILE'))
+        storePassword System.getenv('STORE_PASSWORD')
+        keyAlias System.getenv('KEY_ALIAS')
+        keyPassword System.getenv('KEY_PASSWORD')
+      }
+    }
+  }
+  buildTypes {
+    release {
+      if (System.getenv('STORE_FILE')) signingConfig signingConfigs.release
+      minifyEnabled false
+    }
+    debug {
+      if (System.getenv('STORE_FILE')) signingConfig signingConfigs.release
+    }
+  }
 }
 dependencies{
   implementation 'androidx.webkit:webkit:1.11.0'
